@@ -1,0 +1,32 @@
+# Database
+pymysql>=1.1.0
+sqlalchemy>=2.0.0
+mysql-connector-python>=8.0.0
+
+# LLM & AI
+openai>=1.0.0
+anthropic>=0.20.0
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-anthropic>=0.1.0
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Utilities
+pydantic>=2.0.0
+pyyaml>=6.0.0
+click>=8.0.0
+rich>=13.0.0
+tqdm>=4.65.0
+
+# Testing & Benchmarking
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Logging
+loguru>=0.7.0
