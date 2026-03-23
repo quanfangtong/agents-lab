@@ -1,0 +1,457 @@
+{
+  "benchmark_info": {
+    "solution": "G2: Kuzu Embedded Schema Graph",
+    "test_cases_count": 12,
+    "models": [
+      "Claude Opus 4.6"
+    ],
+    "timestamp": "2026-03-23 17:30:13"
+  },
+  "results_by_model": {
+    "Claude Opus 4.6": [
+      {
+        "id": "Q01",
+        "question": "公司ID为859的公司一共有多少套房源？",
+        "category": "single_table",
+        "difficulty": "easy",
+        "expected_tables": [
+          "qft_whole_housing",
+          "qft_joint_housing",
+          "qft_focus_parent_room"
+        ],
+        "generated_sql": "SELECT SUM(cnt) AS total_housing_count\nFROM (\n    SELECT COUNT(*) AS cnt\n    FROM qft_lease.qft_whole_housing\n    WHERE company_id = 859 AND is_delete = 0\n    UNION ALL\n    SELECT COUNT(*) AS cnt\n    FROM qft_lease.qft_joint_housing\n    WHERE company_id = 859 AND is_delete = 0\n    UNION ALL\n    SELECT COUNT(*) AS cnt\n    FROM qft_lease.qft_focus_parent_room\n    WHERE company_id = 859 AND is_delete = 0\n) t;",
+        "schema_tables_found": [
+          "qft_company",
+          "qft_focus_parent_room",
+          "qft_joint_housing",
+          "qft_whole_housing",
+          "qft_agent_record_top",
+          "qft_housing_middle2",
+          "qft_ai_coze_message",
+          "qft_applets_template_config",
+          "qft_advertising_management",
+          "qft_application_recharge_record"
+        ],
+        "execution_result": {
+          "success": true,
+          "row_count": 1,
+          "error": null,
+          "sample_data": [
+            [
+              "2703"
+            ]
+          ],
+          "columns": [
+            "total_housing_count"
+          ]
+        },
+        "latency_ms": 7483,
+        "graph_time_ms": 50,
+        "llm_time_ms": 6821,
+        "model": "Claude Opus 4.6",
+        "success": true
+      },
+      {
+        "id": "Q02",
+        "question": "目前有多少空置的房间？",
+        "category": "single_table",
+        "difficulty": "easy",
+        "expected_tables": [
+          "qft_room_query_summary_table"
+        ],
+        "generated_sql": "SELECT COUNT(*) AS vacant_room_count\nFROM lease.qft_room_query_summary_table\nWHERE room_is_lease = 0\n  AND room_is_delete = 0\n  AND housing_is_delete = 0\n  AND room_is_freeze = 0\n  AND housing_is_freeze = 0",
+        "schema_tables_found": [
+          "qft_room_query_summary_table",
+          "qft_focus_room",
+          "qft_joint_room",
+          "qft_approve_breach_house",
+          "qft_bill_collection_result",
+          "qft_approve_contract",
+          "house_58_focus_room",
+          "qft_company",
+          "qft_store",
+          "qft_focus_parent_room"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_room_query_summary_table'\")\n[SQL: SELECT COUNT(*) AS vacant_room_count\nFROM lease.qft_room_query_summary_table\nWHERE room_is_lease = 0\n  AND room_is_delete = 0\n  AND housing_is_delete = 0\n  AND room_is_freeze = 0\n  AND housing_is_freeze = 0]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 4593,
+        "graph_time_ms": 77,
+        "llm_time_ms": 4046,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q03",
+        "question": "租客张三的合同什么时候到期？",
+        "category": "cross_table",
+        "difficulty": "medium",
+        "expected_tables": [
+          "qft_joint_tenants",
+          "qft_whole_tenants",
+          "qft_focus_tenants"
+        ],
+        "generated_sql": "SELECT \n    cti.name AS 租客姓名,\n    cti.business_type,\n    cti.contract_endtime AS 合同到期时间,\n    cti.contract_starttime AS 合同开始时间,\n    cti.lease_state AS 租赁状态,\n    cti.property_addr AS 物业地址\nFROM lease.qft_contract_treaty_info cti\nWHERE cti.name = '张三'\n  AND cti.is_delete = 0\n  AND cti.lease_state = 1\nORDER BY cti.contract_endtime DESC;",
+        "schema_tables_found": [
+          "qft_whole_tenants",
+          "qft_focus_tenants",
+          "qft_joint_tenants",
+          "qft_contract_treaty_info",
+          "qft_tenants_installments_record",
+          "qft_batch_add_tenants_record",
+          "qft_focus_tenants_income_merge",
+          "qft_tenants_applets_openid",
+          "qft_focus_tenants_income_paid",
+          "qft_focus_tenants_income"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_contract_treaty_info'\")\n[SQL: SELECT \n    cti.name AS 租客姓名,\n    cti.business_type,\n    cti.contract_endtime AS 合同到期时间,\n    cti.contract_starttime AS 合同开始时间,\n    cti.lease_state AS 租赁状态,\n    cti.property_addr AS 物业地址\nFROM lease.qft_contract_treaty_info cti\nWHERE cti.name = '张三'\n  AND cti.is_delete = 0\n  AND cti.lease_state = 1\nORDER BY cti.contract_endtime DESC;]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 6293,
+        "graph_time_ms": 96,
+        "llm_time_ms": 5651,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q04",
+        "question": "本月应收租金总额是多少？",
+        "category": "aggregation",
+        "difficulty": "medium",
+        "expected_tables": [
+          "qft_joint_tenants_income",
+          "qft_joint_tenants_sub_income",
+          "qft_whole_bill_expend",
+          "qft_focus_tenants_income"
+        ],
+        "generated_sql": "SELECT SUM(total_income) AS total_rent_income\nFROM (\n    -- 集中式应收租金\n    SELECT SUM(fi.final_money) AS total_income\n    FROM finance.qft_focus_tenants_income fi\n    WHERE fi.is_delete = 0\n      AND fi.is_deposit = 0\n      AND fi.start_valid_date < DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01')\n      AND fi.end_valid_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')\n      AND fi.is_history = 0\n\n    UNION ALL\n\n    -- 合租/整租应收租金\n    SELECT SUM(ji.final_money) AS total_income\n    FROM finance.qft_joint_tenants_income ji\n    WHERE ji.is_delete = 0\n      AND ji.is_deposit = 0\n      AND ji.start_valid_date < DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01')\n      AND ji.end_valid_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01')\n      AND ji.is_history = 0\n) t;",
+        "schema_tables_found": [
+          "qft_focus_tenants_income",
+          "qft_whole_bill_expend",
+          "qft_joint_tenants_income",
+          "qft_joint_tenants_sub_income",
+          "qft_company",
+          "qft_store",
+          "qft_focus_parent_room",
+          "qft_joint_housing",
+          "qft_whole_housing",
+          "qft_focus_room"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_focus_tenants_income'\")\n[SQL: SELECT SUM(total_income) AS total_rent_income\nFROM (\n    -- 集中式应收租金\n    SELECT SUM(fi.final_money) AS total_income\n    FROM finance.qft_focus_tenants_income fi\n    WHERE fi.is_delete = 0\n      AND fi.is_deposit = 0\n      AND fi.start_valid_date < DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%%Y-%%m-01')\n      AND fi.end_valid_date >= DATE_FORMAT(CURDATE(), '%%Y-%%m-01')\n      AND fi.is_history = 0\n\n    UNION ALL\n\n    -- 合租/整租应收租金\n    SELECT SUM(ji.final_money) AS total_income\n    FROM finance.qft_joint_tenants_income ji\n    WHERE ji.is_delete = 0\n      AND ji.is_deposit = 0\n      AND ji.start_valid_date < DATE_FORMAT(DATE_ADD(CURDATE(), INTERVAL 1 MONTH), '%%Y-%%m-01')\n      AND ji.end_valid_date >= DATE_FORMAT(CURDATE(), '%%Y-%%m-01')\n      AND ji.is_history = 0\n) t;]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 7169,
+        "graph_time_ms": 74,
+        "llm_time_ms": 6557,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q05",
+        "question": "逾期未缴费的租客有哪些？列出姓名和欠费金额",
+        "category": "cross_table",
+        "difficulty": "medium",
+        "expected_tables": [
+          "qft_joint_tenants_sub_income",
+          "qft_joint_tenants"
+        ],
+        "generated_sql": "SELECT \n    t.tenants_name AS 姓名,\n    SUM(s.debt_money) AS 欠费金额\nFROM lease.qft_joint_tenants_sub_income s\nJOIN lease.qft_joint_tenants t ON s.tenants_id = t.id\nWHERE s.is_delete = 0\n  AND s.pay_status IN (1, 2)\n  AND s.collection_date < CURDATE()\n  AND s.debt_money > 0\n  AND t.is_delete = 0\nGROUP BY t.id, t.tenants_name\n\nUNION ALL\n\nSELECT \n    t.tenants_name AS 姓名,\n    SUM(i.debt_money) AS 欠费金额\nFROM finance.qft_focus_tenants_income i\nJOIN lease.qft_focus_tenants t ON i.tenants_id = t.id\nWHERE i.is_delete = 0\n  AND i.pay_status IN (1, 2)\n  AND i.collection_date < CURDATE()\n  AND i.debt_money > 0\n  AND t.is_delete = 0\nGROUP BY t.id, t.name\n\nUNION ALL\n\nSELECT \n    t.tenants_name AS 姓名,\n    SUM(p.debt_money) AS 欠费金额\nFROM lease.qft_focus_tenants_income_paid p\nJOIN lease.qft_whole_tenants t ON p.tenants_id = t.id\nWHERE p.is_delete = 0\n  AND p.pay_status IN (1, 2)\n  AND p.collection_date < CURDATE()\n  AND p.debt_money > 0\n  AND t.is_delete = 0\nGROUP BY t.id, t.tenants_name",
+        "schema_tables_found": [
+          "qft_joint_tenants_sub_income",
+          "qft_joint_tenants",
+          "qft_whole_tenants",
+          "qft_focus_tenants",
+          "qft_tenants_installments_record",
+          "qft_batch_add_tenants_record",
+          "qft_focus_tenants_income_merge",
+          "qft_tenants_applets_openid",
+          "qft_focus_tenants_income_paid",
+          "qft_focus_tenants_income"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_joint_tenants_sub_income'\")\n[SQL: SELECT \n    t.tenants_name AS 姓名,\n    SUM(s.debt_money) AS 欠费金额\nFROM lease.qft_joint_tenants_sub_income s\nJOIN lease.qft_joint_tenants t ON s.tenants_id = t.id\nWHERE s.is_delete = 0\n  AND s.pay_status IN (1, 2)\n  AND s.collection_date < CURDATE()\n  AND s.debt_money > 0\n  AND t.is_delete = 0\nGROUP BY t.id, t.tenants_name\n\nUNION ALL\n\nSELECT \n    t.tenants_name AS 姓名,\n    SUM(i.debt_money) AS 欠费金额\nFROM finance.qft_focus_tenants_income i\nJOIN lease.qft_focus_tenants t ON i.tenants_id = t.id\nWHERE i.is_delete = 0\n  AND i.pay_status IN (1, 2)\n  AND i.collection_date < CURDATE()\n  AND i.debt_money > 0\n  AND t.is_delete = 0\nGROUP BY t.id, t.name\n\nUNION ALL\n\nSELECT \n    t.tenants_name AS 姓名,\n    SUM(p.debt_money) AS 欠费金额\nFROM lease.qft_focus_tenants_income_paid p\nJOIN lease.qft_whole_tenants t ON p.tenants_id = t.id\nWHERE p.is_delete = 0\n  AND p.pay_status IN (1, 2)\n  AND p.collection_date < CURDATE()\n  AND p.debt_money > 0\n  AND t.is_delete = 0\nGROUP BY t.id, t.tenants_name]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 6816,
+        "graph_time_ms": 73,
+        "llm_time_ms": 6395,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q06",
+        "question": "某个门店下所有房源的出租率是多少？",
+        "category": "aggregation",
+        "difficulty": "medium",
+        "expected_tables": [
+          "qft_room_query_summary_table"
+        ],
+        "generated_sql": "SELECT \n    s.id AS store_id,\n    s.name AS store_name,\n    COUNT(*) AS total_rooms,\n    SUM(CASE WHEN r.room_is_lease = 1 THEN 1 ELSE 0 END) AS rented_rooms,\n    ROUND(SUM(CASE WHEN r.room_is_lease = 1 THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS occupancy_rate\nFROM lease.qft_room_query_summary_table r\nJOIN basics.qft_store s ON r.housing_store_id = s.id\nWHERE r.room_is_delete = 0\n  AND r.housing_is_delete = 0\n  AND s.is_delete = 0\n  AND s.id = #{storeId}\nGROUP BY s.id, s.name;",
+        "schema_tables_found": [
+          "qft_store",
+          "qft_focus_parent_room",
+          "qft_joint_housing",
+          "qft_whole_housing",
+          "qft_room_query_summary_table",
+          "qft_housing_middle2",
+          "qft_approve_breach_house",
+          "qft_bill_collection_result",
+          "qft_approve_contract",
+          "qft_attendance_account_bind"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.ProgrammingError) (1064, \"You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'GROUP BY s.id, s.name' at line 13\")\n[SQL: SELECT \n    s.id AS store_id,\n    s.name AS store_name,\n    COUNT(*) AS total_rooms,\n    SUM(CASE WHEN r.room_is_lease = 1 THEN 1 ELSE 0 END) AS rented_rooms,\n    ROUND(SUM(CASE WHEN r.room_is_lease = 1 THEN 1 ELSE 0 END) / COUNT(*) * 100, 2) AS occupancy_rate\nFROM lease.qft_room_query_summary_table r\nJOIN basics.qft_store s ON r.housing_store_id = s.id\nWHERE r.room_is_delete = 0\n  AND r.housing_is_delete = 0\n  AND s.is_delete = 0\n  AND s.id = #{storeId}\nGROUP BY s.id, s.name;]\n(Background on this error at: https://sqlalche.me/e/20/f405)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 5282,
+        "graph_time_ms": 57,
+        "llm_time_ms": 4841,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q07",
+        "question": "公司859上个月的财务收入和支出分别是多少？",
+        "category": "cross_db",
+        "difficulty": "hard",
+        "expected_tables": [
+          "qft_finance_859"
+        ],
+        "generated_sql": "SELECT \n  SUM(CASE WHEN nature = 1 THEN money ELSE 0 END) AS total_income,\n  SUM(CASE WHEN nature = 0 THEN money ELSE 0 END) AS total_expend\nFROM finance.qft_finance\nWHERE company_id = 859\n  AND is_delete = 0\n  AND account_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01')\n  AND account_date < DATE_FORMAT(CURDATE(), '%Y-%m-01');",
+        "schema_tables_found": [
+          "qft_company",
+          "qft_focus_tenants_income",
+          "qft_whole_bill_expend",
+          "qft_joint_tenants_income",
+          "qft_finance",
+          "qft_finance_item",
+          "qft_cdrm_income_remake",
+          "qft_cdrm_income_housing",
+          "qft_cdrm_income_contract",
+          "qft_company_income_upgraded"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_finance'\")\n[SQL: SELECT \n  SUM(CASE WHEN nature = 1 THEN money ELSE 0 END) AS total_income,\n  SUM(CASE WHEN nature = 0 THEN money ELSE 0 END) AS total_expend\nFROM finance.qft_finance\nWHERE company_id = 859\n  AND is_delete = 0\n  AND account_date >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%%Y-%%m-01')\n  AND account_date < DATE_FORMAT(CURDATE(), '%%Y-%%m-01');]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 21807,
+        "graph_time_ms": 102,
+        "llm_time_ms": 21256,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q08",
+        "question": "某租客的完整账单和对应的财务流水明细",
+        "category": "cross_db",
+        "difficulty": "hard",
+        "expected_tables": [
+          "qft_joint_tenants",
+          "qft_joint_tenants_sub_income",
+          "qft_finance",
+          "qft_finance_item"
+        ],
+        "generated_sql": "SELECT \n    t.id AS tenant_id,\n    t.tenants_name,\n    t.phone,\n    -- 账单信息\n    i.id AS income_id,\n    i.business_type,\n    i.pay_count,\n    i.is_deposit,\n    i.start_valid_date,\n    i.end_valid_date,\n    i.pay_money,\n    i.final_money,\n    i.real_money AS income_real_money,\n    i.debt_money,\n    i.pay_status,\n    i.collection_date,\n    -- 子账单信息\n    si.id AS sub_income_id,\n    si.sub_income_name,\n    si.sub_income_type,\n    si.pay_money AS sub_pay_money,\n    si.final_money AS sub_final_money,\n    si.real_money AS sub_real_money,\n    si.debt_money AS sub_debt_money,\n    si.pay_status AS sub_pay_status,\n    si.late_fee_money AS sub_late_fee,\n    -- 财务流水信息\n    f.id AS finance_id,\n    f.serial_number,\n    f.nature,\n    f.money AS finance_money,\n    f.account_date,\n    f.cashier,\n    f.audit,\n    f.source_type,\n    f.finance_abstract,\n    -- 流水明细信息\n    fi.id AS finance_item_id,\n    fi.bill_code,\n    fi.bill_item_code,\n    fi.classify AS item_classify,\n    fi.cause AS item_cause,\n    fi.trade_money,\n    fi.real_money AS item_real_money,\n    fi.late_money,\n    fi.deduction_type\nFROM lease.qft_joint_tenants t\n-- 关联应收账单\nLEFT JOIN finance.qft_joint_tenants_income i \n    ON i.tenants_id = t.id \n    AND i.is_delete = 0\n-- 关联子账单\nLEFT JOIN lease.qft_joint_tenants_sub_income si \n    ON si.income_id = i.id \n    AND si.tenants_id = t.id \n    AND si.is_delete = 0\n-- 关联财务流水\nLEFT JOIN finance.qft_finance f \n    ON f.tenant_id = t.id \n    AND f.is_delete = 0\n-- 关联流水明细\nLEFT JOIN finance.qft_finance_item fi \n    ON fi.finance_id = f.id \n    AND fi.is_delete = 0\nWHERE t.is_delete = 0\n    AND t.company_id = ?\n    AND t.id = ?\nORDER BY i.pay_count ASC, si.sub_income_type ASC, f.account_date DESC;",
+        "schema_tables_found": [
+          "qft_finance",
+          "qft_finance_item",
+          "qft_focus_tenants_income",
+          "qft_joint_tenants_income",
+          "qft_joint_tenants_sub_income",
+          "qft_finance_item_extend",
+          "qft_whole_tenants",
+          "qft_focus_tenants",
+          "qft_whole_bill_expend",
+          "qft_joint_tenants"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.ProgrammingError) (1064, \"You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '?\\n    AND t.id = ?\\nORDER BY i.pay_count ASC, si.sub_income_type ASC, f.account_d' at line 67\")\n[SQL: SELECT \n    t.id AS tenant_id,\n    t.tenants_name,\n    t.phone,\n    -- 账单信息\n    i.id AS income_id,\n    i.business_type,\n    i.pay_count,\n    i.is_deposit,\n    i.start_valid_date,\n    i.end_valid_date,\n    i.pay_money,\n    i.final_money,\n    i.real_money AS income_real_money,\n    i.debt_money,\n    i.pay_status,\n    i.collection_date,\n    -- 子账单信息\n    si.id AS sub_income_id,\n    si.sub_income_name,\n    si.sub_income_type,\n    si.pay_money AS sub_pay_money,\n    si.final_money AS sub_final_money,\n    si.real_money AS sub_real_money,\n    si.debt_money AS sub_debt_money,\n    si.pay_status AS sub_pay_status,\n    si.late_fee_money AS sub_late_fee,\n    -- 财务流水信息\n    f.id AS finance_id,\n    f.serial_number,\n    f.nature,\n    f.money AS finance_money,\n    f.account_date,\n    f.cashier,\n    f.audit,\n    f.source_type,\n    f.finance_abstract,\n    -- 流水明细信息\n    fi.id AS finance_item_id,\n    fi.bill_code,\n    fi.bill_item_code,\n    fi.classify AS item_classify,\n    fi.cause AS item_cause,\n    fi.trade_money,\n    fi.real_money AS item_real_money,\n    fi.late_money,\n    fi.deduction_type\nFROM lease.qft_joint_tenants t\n-- 关联应收账单\nLEFT JOIN finance.qft_joint_tenants_income i \n    ON i.tenants_id = t.id \n    AND i.is_delete = 0\n-- 关联子账单\nLEFT JOIN lease.qft_joint_tenants_sub_income si \n    ON si.income_id = i.id \n    AND si.tenants_id = t.id \n    AND si.is_delete = 0\n-- 关联财务流水\nLEFT JOIN finance.qft_finance f \n    ON f.tenant_id = t.id \n    AND f.is_delete = 0\n-- 关联流水明细\nLEFT JOIN finance.qft_finance_item fi \n    ON fi.finance_id = f.id \n    AND fi.is_delete = 0\nWHERE t.is_delete = 0\n    AND t.company_id = ?\n    AND t.id = ?\nORDER BY i.pay_count ASC, si.sub_income_type ASC, f.account_date DESC;]\n(Background on this error at: https://sqlalche.me/e/20/f405)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 11825,
+        "graph_time_ms": 77,
+        "llm_time_ms": 11265,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q09",
+        "question": "哪些房源的合同将在30天内到期？",
+        "category": "cross_table",
+        "difficulty": "medium",
+        "expected_tables": [
+          "qft_whole_tenants",
+          "qft_joint_tenants",
+          "qft_focus_tenants",
+          "qft_whole_housing",
+          "qft_joint_housing"
+        ],
+        "generated_sql": "SELECT DISTINCT\n    cti.housing_id,\n    cti.property_addr,\n    cti.business_type,\n    cti.contract_endtime,\n    cti.name,\n    cti.phone,\n    cti.rent_type,\n    cti.lease_state\nFROM lease.qft_contract_treaty_info cti\nWHERE cti.is_delete = 0\n  AND cti.lease_state = 1\n  AND cti.contract_endtime >= CURDATE()\n  AND cti.contract_endtime <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)\nORDER BY cti.contract_endtime ASC;",
+        "schema_tables_found": [
+          "qft_whole_tenants",
+          "qft_focus_tenants",
+          "qft_joint_tenants",
+          "qft_focus_parent_room",
+          "qft_joint_housing",
+          "qft_whole_housing",
+          "qft_contract_treaty_info",
+          "qft_cdrm_expend_contract",
+          "qft_approve_contract",
+          "qft_approve_contract_image"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_contract_treaty_info'\")\n[SQL: SELECT DISTINCT\n    cti.housing_id,\n    cti.property_addr,\n    cti.business_type,\n    cti.contract_endtime,\n    cti.name,\n    cti.phone,\n    cti.rent_type,\n    cti.lease_state\nFROM lease.qft_contract_treaty_info cti\nWHERE cti.is_delete = 0\n  AND cti.lease_state = 1\n  AND cti.contract_endtime >= CURDATE()\n  AND cti.contract_endtime <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)\nORDER BY cti.contract_endtime ASC;]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 5537,
+        "graph_time_ms": 70,
+        "llm_time_ms": 4934,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q10",
+        "question": "各区域的房源数量和平均租金",
+        "category": "multi_join",
+        "difficulty": "hard",
+        "expected_tables": [
+          "qft_whole_housing",
+          "qft_joint_housing",
+          "qft_focus_parent_room",
+          "qft_area"
+        ],
+        "generated_sql": "SELECT \n    a.area_name,\n    COUNT(DISTINCT h.id) AS housing_count,\n    ROUND(AVG(h.joe_price), 2) AS avg_rent\nFROM basics.qft_area a\nINNER JOIN lease.qft_whole_housing h ON h.house_area = a.id\nWHERE a.is_delete = 0\n  AND a.area_type = 1\n  AND h.is_delete = 0\n  AND h.is_check_out = 0\nGROUP BY a.id, a.area_name\n\nUNION ALL\n\nSELECT \n    a.area_name,\n    COUNT(DISTINCT h.id) AS housing_count,\n    ROUND(AVG(h.joe_price), 2) AS avg_rent\nFROM basics.qft_area a\nINNER JOIN lease.qft_joint_housing h ON h.house_area = a.id\nWHERE a.is_delete = 0\n  AND a.area_type = 1\n  AND h.is_delete = 0\n  AND h.is_check_out = 0\nGROUP BY a.id, a.area_name",
+        "schema_tables_found": [
+          "qft_area",
+          "qft_focus_parent_room",
+          "qft_joint_housing",
+          "qft_whole_housing",
+          "qft_focus_tenants_income",
+          "qft_whole_bill_expend",
+          "qft_joint_tenants_income",
+          "qft_joint_tenants_sub_income",
+          "qft_housing_middle2",
+          "qft_approve_breach_house"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_area'\")\n[SQL: SELECT \n    a.area_name,\n    COUNT(DISTINCT h.id) AS housing_count,\n    ROUND(AVG(h.joe_price), 2) AS avg_rent\nFROM basics.qft_area a\nINNER JOIN lease.qft_whole_housing h ON h.house_area = a.id\nWHERE a.is_delete = 0\n  AND a.area_type = 1\n  AND h.is_delete = 0\n  AND h.is_check_out = 0\nGROUP BY a.id, a.area_name\n\nUNION ALL\n\nSELECT \n    a.area_name,\n    COUNT(DISTINCT h.id) AS housing_count,\n    ROUND(AVG(h.joe_price), 2) AS avg_rent\nFROM basics.qft_area a\nINNER JOIN lease.qft_joint_housing h ON h.house_area = a.id\nWHERE a.is_delete = 0\n  AND a.area_type = 1\n  AND h.is_delete = 0\n  AND h.is_check_out = 0\nGROUP BY a.id, a.area_name]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 8212,
+        "graph_time_ms": 129,
+        "llm_time_ms": 7616,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q11",
+        "question": "公司859本月新签了多少份合同？",
+        "category": "single_table",
+        "difficulty": "easy",
+        "expected_tables": [
+          "qft_contract_treaty_info"
+        ],
+        "generated_sql": "SELECT COUNT(*) AS new_contract_count\nFROM lease.qft_contract_treaty_info\nWHERE company_id = 859\n  AND contract_nature = 1\n  AND is_delete = 0\n  AND create_time >= DATE_FORMAT(CURDATE(), '%Y-%m-01')\n  AND create_time < DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH);",
+        "schema_tables_found": [
+          "qft_company",
+          "qft_whole_tenants",
+          "qft_focus_tenants",
+          "qft_joint_tenants",
+          "qft_contract_treaty_info",
+          "qft_cdrm_expend_contract",
+          "qft_approve_contract",
+          "qft_cdrm_expend_contract_bill_relation",
+          "qft_approve_contract_image",
+          "qft_cdrm_expend_contract_bill_relation_split"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_contract_treaty_info'\")\n[SQL: SELECT COUNT(*) AS new_contract_count\nFROM lease.qft_contract_treaty_info\nWHERE company_id = 859\n  AND contract_nature = 1\n  AND is_delete = 0\n  AND create_time >= DATE_FORMAT(CURDATE(), '%%Y-%%m-01')\n  AND create_time < DATE_ADD(DATE_FORMAT(CURDATE(), '%%Y-%%m-01'), INTERVAL 1 MONTH);]\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 4833,
+        "graph_time_ms": 97,
+        "llm_time_ms": 4372,
+        "model": "Claude Opus 4.6",
+        "success": false
+      },
+      {
+        "id": "Q12",
+        "question": "某门店下逾期租客的房东联系方式",
+        "category": "multi_hop",
+        "difficulty": "hard",
+        "expected_tables": [
+          "qft_joint_tenants_sub_income",
+          "qft_joint_tenants",
+          "qft_joint_housing"
+        ],
+        "generated_sql": "SELECT DISTINCT\n    jt.tenants_name AS 租客姓名,\n    jt.phone AS 租客电话,\n    jh.housing_name AS 房东姓名,\n    jh.housing_phone AS 房东电话,\n    jh.housing_other_phone AS 房东其他电话,\n    s.name AS 门店名称,\n    '合租' AS 业务类型\nFROM lease.qft_joint_tenants_sub_income si\nJOIN lease.qft_joint_tenants jt ON si.tenants_id = jt.id\nJOIN lease.qft_joint_housing jh ON si.housing_id = jh.id\nJOIN basics.qft_store s ON si.store_id = s.id\nWHERE si.pay_status IN (1, 2)\n  AND si.is_delete = 0\n  AND si.end_valid_date < CURDATE()\n  AND jt.is_delete = 0\n  AND jh.is_delete = 0\n  AND s.is_delete = 0\n  AND s.name = '${门店名称}'\n\nUNION ALL\n\nSELECT DISTINCT\n    wt.tenants_name AS 租客姓名,\n    wt.phone AS 租客电话,\n    wh.housing_name AS 房东姓名,\n    wh.housing_phone AS 房东电话,\n    wh.housing_other_phone AS 房东其他电话,\n    s.name AS 门店名称,\n    '整租' AS 业务类型\nFROM lease.qft_joint_tenants_sub_income si\nJOIN lease.qft_whole_tenants wt ON si.tenants_id = wt.id\nJOIN lease.qft_whole_housing wh ON si.housing_id = wh.id\nJOIN basics.qft_store s ON si.store_id = s.id\nWHERE si.pay_status IN (1, 2)\n  AND si.is_delete = 0\n  AND si.end_valid_date < CURDATE()\n  AND wt.is_delete = 0\n  AND wh.is_delete = 0\n  AND s.is_delete = 0\n  AND s.name = '${门店名称}'",
+        "schema_tables_found": [
+          "qft_joint_tenants",
+          "qft_joint_tenants_sub_income",
+          "qft_store",
+          "qft_joint_housing",
+          "qft_whole_housing",
+          "qft_whole_tenants",
+          "qft_focus_tenants",
+          "qft_tenants_installments_record",
+          "qft_batch_add_tenants_record",
+          "qft_focus_tenants_income_merge"
+        ],
+        "execution_result": {
+          "success": false,
+          "row_count": 0,
+          "error": "(pymysql.err.OperationalError) (1142, \"SELECT command denied to user 'qft_read'@'106.120.136.165' for table 'qft_joint_tenants_sub_income'\")\n[SQL: SELECT DISTINCT\n    jt.tenants_name AS 租客姓名,\n    jt.phone AS 租客电话,\n    jh.housing_name AS 房东姓名,\n    jh.housing_phone AS 房东电话,\n    jh.housing_other_phone AS 房东其他电话,\n    s.name AS 门店名称,\n    '合租' AS 业务类型\nFROM lease.qft_joint_tenants_sub_income si\nJOIN lease.qft_joint_tenants jt ON si.tenants_id = jt.id\nJOIN lease.qft_joint_housing jh ON si.housing_id = jh.id\nJOIN basics.qft_store s ON si.store_id = s.id\nWHERE si.pay_status IN (1, 2)\n  AND si.is_delete = 0\n  AND si.end_valid_date < CURDATE()\n  AND jt.is_delete = 0\n  AND jh.is_delete = 0\n  AND s.is_delete = 0\n  AND s.name = '${门店名称}'\n\nUNION ALL\n\nSELECT DISTINCT\n    wt.tenants_name AS 租客姓名,\n    wt.phone AS 租客电话,\n    wh.housing_name AS 房东姓名,\n    wh.housing_phone AS 房东电话,\n    wh.housing_other_phone AS 房东其他电话,\n    s.name AS 门店名称,\n    '整租' AS 业务类型\nFROM lease.qft_joint_tenants_sub_income si\nJOIN lease.qft_whole_tenants wt ON si.tenants_id = wt.id\nJOIN lease.qft_whole_housing wh ON si.housing_id = wh.id\nJOIN basics.qft_store s ON si.store_id = s.id\nWHERE si.pay_status IN (1, 2)\n  AND si.is_delete = 0\n  AND si.end_valid_date < CURDATE()\n  AND wt.is_delete = 0\n  AND wh.is_delete = 0\n  AND s.is_delete = 0\n  AND s.name = '${门店名称}']\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+          "sample_data": [],
+          "columns": []
+        },
+        "latency_ms": 8756,
+        "graph_time_ms": 99,
+        "llm_time_ms": 8213,
+        "model": "Claude Opus 4.6",
+        "success": false
+      }
+    ]
+  },
+  "summary": {
+    "Claude Opus 4.6": {
+      "total": 12,
+      "success": 1,
+      "fail": 11,
+      "success_rate": "8.3%",
+      "avg_latency_ms": 8217
+    }
+  }
+}

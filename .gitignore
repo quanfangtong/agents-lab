@@ -45,3 +45,4 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
+data/kuzu_schema_graph/

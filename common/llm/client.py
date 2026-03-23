@@ -36,6 +36,7 @@ class LLMClient:
         model: ModelType = ModelType.GPT5,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        timeout: Optional[int] = 120,
         **kwargs,
     ) -> str:
         """
@@ -46,6 +47,7 @@ class LLMClient:
             model: Model type to use
             temperature: Sampling temperature (0-1)
             max_tokens: Maximum tokens to generate
+            timeout: Request timeout in seconds (default 120)
             **kwargs: Additional parameters for the API
 
         Returns:
@@ -57,6 +59,7 @@ class LLMClient:
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
+                timeout=float(timeout),
                 **kwargs,
             )
 
