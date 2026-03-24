@@ -43,16 +43,6 @@ export function SolutionComparison() {
       deploy: 'docker run falkordb',
       latency: '图遍历 ~10-50ms',
     },
-    {
-      key: 'E', name: '静态规则', subtitle: '手工关键词映射',
-      color: '#d2a8ff',
-      graph: '无（Python dict）',
-      how: '问题 → 硬编码的关键词→表映射 → 精简 DDL → LLM 生成 SQL',
-      pros: ['无需任何外部依赖', '可控性最强', 'Token 消耗最低'],
-      cons: ['需要手工维护映射', '无法发现新关系', '不可扩展'],
-      deploy: '无需部署',
-      latency: '< 1ms',
-    },
   ]
 
   const graphDBs = [
@@ -64,7 +54,7 @@ export function SolutionComparison() {
   return (
     <div>
       <p style={{ color: '#8b949e', marginBottom: 24, fontSize: 14 }}>
-        对比 5 种 Text-to-SQL 方案的架构差异、图数据库特性和适用场景
+        对比 4 种 Text-to-SQL 方案的架构差异、图数据库特性和适用场景
       </p>
 
       {/* 方案架构对比 */}

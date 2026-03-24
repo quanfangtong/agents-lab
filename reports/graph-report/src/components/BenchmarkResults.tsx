@@ -38,7 +38,6 @@ const SOLUTION_COLORS: Record<string, string> = {
   'B_Kuzu': '#10b981',
   'C_Neo4j': '#3b82f6',
   'D_FalkorDB': '#f59e0b',
-  'E_StaticMetadata': '#d2a8ff',
 }
 
 const SOLUTION_LABELS: Record<string, string> = {
@@ -46,7 +45,6 @@ const SOLUTION_LABELS: Record<string, string> = {
   'B_Kuzu': 'B. Kuzu',
   'C_Neo4j': 'C. Neo4j',
   'D_FalkorDB': 'D. FalkorDB',
-  'E_StaticMetadata': 'E. 静态规则',
 }
 
 export function BenchmarkResults() {

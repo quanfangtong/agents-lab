@@ -20,13 +20,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.llm import get_llm_client, ModelType
 from solutions.baseline_text2sql import BaselineSolution
-from solutions.static_metadata import StaticMetadataSolution
 from solutions.graph_kuzu import KuzuSolution
 
 SOLUTIONS_MAP = {
     "A": BaselineSolution,
     "B": KuzuSolution,
-    "E": StaticMetadataSolution,
 }
 
 # Neo4j 和 FalkorDB 需要 Docker 运行，动态导入
@@ -186,7 +184,7 @@ def summarize(results: list[dict]) -> dict:
 
 def main():
     parser = argparse.ArgumentParser(description="Multi-Solution Benchmark")
-    parser.add_argument("--solutions", default="A,B,E", help="Comma-separated solution keys (A,B,C,D,E)")
+    parser.add_argument("--solutions", default="A,B,C,D", help="Comma-separated solution keys (A,B,C,D)")
     parser.add_argument("--models", default="gpt5", help="Comma-separated: gpt5,opus")
     parser.add_argument("--questions", type=int, default=0, help="Limit number of questions (0=all)")
     args = parser.parse_args()
