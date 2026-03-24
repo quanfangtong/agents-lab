@@ -1,0 +1,55 @@
+{
+  "version": "final",
+  "total": 77,
+  "tables": {
+    "basics": [
+      "qft_company", "qft_store", "qft_area", "qft_prov_city_area",
+      "qft_area_property", "qft_user"
+    ],
+    "lease": [
+      "qft_butler",
+      "qft_focus_housing", "qft_whole_housing", "qft_joint_housing",
+      "qft_reserve_housing", "qft_reserve_housing_deal", "qft_reserve_housing_deposit",
+      "qft_common_housing_renewal", "qft_renovation", "qft_rm_renovation_record",
+      "qft_rm_renovation_amortization",
+      "qft_focus_room", "qft_whole_room", "qft_joint_room",
+      "qft_focus_parent_room", "qft_focus_trust", "qft_room_bed",
+      "qft_focus_room_earnest", "qft_room_butler", "qft_room_freeze", "qft_room_repair",
+      "qft_focus_tenants", "qft_whole_tenants", "qft_joint_tenants",
+      "qft_focus_tenants_info", "qft_tenants_cohabit",
+      "qft_common_tenant_renewal", "qft_tenants_check_out",
+      "qft_tenants_check_out_one_click", "qft_tenants_change_houses",
+      "qft_tenants_relet", "qft_room_bed_tenants",
+      "qft_electronics_contract", "qft_electronics_contract_sign",
+      "qft_paper_contract", "qft_focus_delivery_order",
+      "qft_focus_tenants_income", "qft_joint_tenants_income",
+      "qft_focus_tenants_income_paid", "qft_joint_tenants_income_paid",
+      "qft_focus_bill_expend", "qft_joint_bill_expend", "qft_whole_bill_expend",
+      "qft_focus_bill_expend_cost",
+      "qft_income_expend_plan", "qft_pay_order", "qft_pay_log",
+      "qft_behalf_pay",
+      "qft_smart_device", "qft_house_device", "qft_smart_house",
+      "qft_smart_lock_open_record", "qft_smart_lock_operate_record", "qft_smart_lock_statistics",
+      "qft_smart_electricity_meter_usage_record", "qft_smart_electricity_meter_recharge_record",
+      "qft_smart_electricity_meter_operate_record",
+      "qft_smart_water_meter_usage_record", "qft_smart_water_meter_recharge_record",
+      "qft_smart_water_meter_operate_record"
+    ],
+    "finance": [
+      "qft_bill", "qft_bill_item", "qft_bill_deduction", "qft_bill_flow_relation",
+      "qft_finance", "qft_finance_item", "qft_finance_bank",
+      "qft_finance_close_bill", "qft_finance_energy_fees",
+      "qft_finance_property_fees", "qft_power_finance"
+    ]
+  },
+  "domains": {
+    "公共基础": ["qft_company", "qft_store", "qft_area", "qft_prov_city_area", "qft_area_property", "qft_user", "qft_butler"],
+    "房源": ["qft_focus_housing", "qft_whole_housing", "qft_joint_housing", "qft_reserve_housing", "qft_reserve_housing_deal", "qft_reserve_housing_deposit", "qft_common_housing_renewal", "qft_renovation", "qft_rm_renovation_record", "qft_rm_renovation_amortization"],
+    "房间": ["qft_focus_room", "qft_whole_room", "qft_joint_room", "qft_focus_parent_room", "qft_focus_trust", "qft_room_bed", "qft_focus_room_earnest", "qft_room_butler", "qft_room_freeze", "qft_room_repair"],
+    "租客": ["qft_focus_tenants", "qft_whole_tenants", "qft_joint_tenants", "qft_focus_tenants_info", "qft_tenants_cohabit", "qft_common_tenant_renewal", "qft_tenants_check_out", "qft_tenants_check_out_one_click", "qft_tenants_change_houses", "qft_tenants_relet", "qft_room_bed_tenants"],
+    "合同": ["qft_electronics_contract", "qft_electronics_contract_sign", "qft_paper_contract", "qft_focus_delivery_order"],
+    "账单": ["qft_bill", "qft_bill_item", "qft_bill_deduction", "qft_bill_flow_relation", "qft_focus_tenants_income", "qft_joint_tenants_income", "qft_focus_tenants_income_paid", "qft_joint_tenants_income_paid", "qft_focus_bill_expend", "qft_joint_bill_expend", "qft_whole_bill_expend", "qft_focus_bill_expend_cost", "qft_income_expend_plan", "qft_pay_order", "qft_pay_log"],
+    "财务": ["qft_finance", "qft_finance_item", "qft_finance_bank", "qft_finance_close_bill", "qft_finance_energy_fees", "qft_finance_property_fees", "qft_power_finance", "qft_behalf_pay"],
+    "智能硬件": ["qft_smart_device", "qft_house_device", "qft_smart_house", "qft_smart_lock_open_record", "qft_smart_lock_operate_record", "qft_smart_lock_statistics", "qft_smart_electricity_meter_usage_record", "qft_smart_electricity_meter_recharge_record", "qft_smart_electricity_meter_operate_record", "qft_smart_water_meter_usage_record", "qft_smart_water_meter_recharge_record", "qft_smart_water_meter_operate_record"]
+  }
+}

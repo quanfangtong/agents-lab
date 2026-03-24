@@ -1,0 +1,98 @@
+[
+  {
+    "id": "Q01",
+    "question": "我们公司一共有多少套房源？",
+    "category": "single_table",
+    "difficulty": "easy",
+    "company_id": 1293,
+    "notes": "需要跨三种业务模式统计，company_id=1293"
+  },
+  {
+    "id": "Q02",
+    "question": "目前有多少空置的房间？",
+    "category": "single_table",
+    "difficulty": "easy",
+    "company_id": 1293,
+    "notes": "需要理解'空置'对应的状态值"
+  },
+  {
+    "id": "Q03",
+    "question": "租客张三的合同什么时候到期？",
+    "category": "cross_table",
+    "difficulty": "medium",
+    "company_id": 1293,
+    "notes": "需要先确定业务模式再选表"
+  },
+  {
+    "id": "Q04",
+    "question": "本月应收租金总额是多少？",
+    "category": "aggregation",
+    "difficulty": "medium",
+    "company_id": 1293,
+    "notes": "需要跨三种模式的账单表汇总"
+  },
+  {
+    "id": "Q05",
+    "question": "逾期未缴费的租客有哪些？列出姓名和欠费金额",
+    "category": "cross_table",
+    "difficulty": "medium",
+    "company_id": 1293,
+    "notes": "需要关联账单表和租客表"
+  },
+  {
+    "id": "Q06",
+    "question": "各门店的房源出租率分别是多少？",
+    "category": "aggregation",
+    "difficulty": "medium",
+    "company_id": 1293,
+    "notes": "按 store_id 分组统计"
+  },
+  {
+    "id": "Q07",
+    "question": "上个月的财务收入和支出分别是多少？",
+    "category": "cross_db",
+    "difficulty": "hard",
+    "company_id": 1293,
+    "notes": "公司1293的财务数据在分片表 qft_finance_1293 中"
+  },
+  {
+    "id": "Q08",
+    "question": "列出最近签约的10个租客及其合同详情",
+    "category": "cross_table",
+    "difficulty": "medium",
+    "company_id": 1293,
+    "notes": "关联租客表和合同表，按签约时间排序"
+  },
+  {
+    "id": "Q09",
+    "question": "哪些房源的合同将在30天内到期？",
+    "category": "cross_table",
+    "difficulty": "medium",
+    "company_id": 1293,
+    "notes": "关联租客和房源表"
+  },
+  {
+    "id": "Q10",
+    "question": "各门店的合租和整租房源数量分别是多少？",
+    "category": "multi_join",
+    "difficulty": "medium",
+    "company_id": 1293,
+    "notes": "需要按 store_id 分组，区分业务模式"
+  },
+  {
+    "id": "Q11",
+    "question": "本月新签了多少份合同？",
+    "category": "single_table",
+    "difficulty": "easy",
+    "company_id": 1293,
+    "notes": "按 create_time 筛选当月"
+  },
+  {
+    "id": "Q12",
+    "question": "欠费最多的前10个租客是谁？分别欠了多少？",
+    "category": "cross_table",
+    "difficulty": "hard",
+    "company_id": 1293,
+    "notes": "需要关联账单和租客表，按欠费排序"
+  }
+]

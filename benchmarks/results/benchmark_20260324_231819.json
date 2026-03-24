@@ -1,0 +1,656 @@
+{
+  "timestamp": "20260324_231819",
+  "config": {
+    "solutions": [
+      "A",
+      "B",
+      "E"
+    ],
+    "models": [
+      "gpt5"
+    ],
+    "question_count": 3
+  },
+  "summary": {
+    "E_StaticMetadata": {
+      "GPT-5.4": {
+        "total": 3,
+        "success": 2,
+        "success_rate": "2/3 (66.7%)",
+        "avg_ms": 3767523,
+        "avg_tokens": 3547
+      }
+    },
+    "A_Baseline": {
+      "GPT-5.4": {
+        "total": 3,
+        "success": 3,
+        "success_rate": "3/3 (100.0%)",
+        "avg_ms": 3780235,
+        "avg_tokens": 57907
+      }
+    },
+    "B_Kuzu": {
+      "GPT-5.4": {
+        "total": 3,
+        "success": 0,
+        "success_rate": "0/3 (0.0%)",
+        "avg_ms": 3830226,
+        "avg_tokens": 23447
+      }
+    }
+  },
+  "results": [
+    {
+      "solution": "E_StaticMetadata",
+      "question": "我们公司一共有几个门店？",
+      "model": "GPT-5.4",
+      "step2_ms": 11,
+      "schema_tables": [
+        "qft_company",
+        "qft_store"
+      ],
+      "schema_token_estimate": 2445,
+      "step3_ms": 4150,
+      "generated_sql": "SELECT COUNT(*) AS store_count\nFROM qft_store\nWHERE company_id = 1001\n  AND IFNULL(is_delete, 0) = 0;",
+      "sql_executable": true,
+      "execution_result": [
+        {
+          "store_count": 3
+        }
+      ],
+      "row_count": 1,
+      "error": null,
+      "success": true,
+      "attempts": 1,
+      "step4_ms": 3,
+      "total_ms": 4348,
+      "question_id": "Q01",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "公共基础",
+      "expected_tables": [
+        "qft_store"
+      ],
+      "table_recall": 1.0
+    },
+    {
+      "solution": "E_StaticMetadata",
+      "question": "我们公司管了几个小区？",
+      "model": "GPT-5.4",
+      "step2_ms": 3,
+      "schema_tables": [
+        "qft_company"
+      ],
+      "schema_token_estimate": 1938,
+      "success": false,
+      "error": "Connection error.",
+      "total_ms": 11208582,
+      "question_id": "Q02",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "公共基础",
+      "expected_tables": [
+        "qft_area_property"
+      ],
+      "table_recall": 0.0
+    },
+    {
+      "solution": "E_StaticMetadata",
+      "question": "城东门店管了多少套整租房源？",
+      "model": "GPT-5.4",
+      "step2_ms": 15,
+      "schema_tables": [
+        "qft_focus_housing",
+        "qft_joint_housing",
+        "qft_store",
+        "qft_whole_housing"
+      ],
+      "schema_token_estimate": 6260,
+      "step3_ms": 89320,
+      "generated_sql": "SELECT COUNT(DISTINCT wh.id) AS whole_housing_count\nFROM qft_whole_housing wh\nINNER JOIN qft_store s ON s.id = wh.store_id\nWHERE wh.company_id = 1001\n  AND IFNULL(wh.is_delete, 0) = 0\n  AND wh.is_check_out = 0\n  AND IFNULL(wh.transfer_status, 0) <> 1\n  AND s.company_id = 1001\n  AND IFNULL(s.is_delete, 0) = 0\n  AND s.name = '城东门店';",
+      "sql_executable": true,
+      "execution_result": [
+        {
+          "whole_housing_count": 4
+        }
+      ],
+      "row_count": 1,
+      "error": null,
+      "success": true,
+      "attempts": 1,
+      "step4_ms": 295,
+      "total_ms": 89640,
+      "question_id": "Q03",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "房源",
+      "expected_tables": [
+        "qft_whole_housing"
+      ],
+      "table_recall": 1.0
+    },
+    {
+      "solution": "A_Baseline",
+      "question": "我们公司一共有几个门店？",
+      "model": "GPT-5.4",
+      "step2_ms": 2,
+      "schema_tables": [
+        "qft_area",
+        "qft_area_property",
+        "qft_behalf_pay",
+        "qft_bill",
+        "qft_bill_deduction",
+        "qft_bill_flow_relation",
+        "qft_bill_item",
+        "qft_butler",
+        "qft_common_housing_renewal",
+        "qft_common_tenant_renewal",
+        "qft_company",
+        "qft_electronics_contract",
+        "qft_electronics_contract_sign",
+        "qft_finance",
+        "qft_finance_bank",
+        "qft_finance_close_bill",
+        "qft_finance_energy_fees",
+        "qft_finance_item",
+        "qft_finance_property_fees",
+        "qft_focus_bill_expend",
+        "qft_focus_bill_expend_cost",
+        "qft_focus_delivery_order",
+        "qft_focus_housing",
+        "qft_focus_parent_room",
+        "qft_focus_room",
+        "qft_focus_room_earnest",
+        "qft_focus_tenants",
+        "qft_focus_tenants_income",
+        "qft_focus_tenants_income_paid",
+        "qft_focus_tenants_info",
+        "qft_focus_trust",
+        "qft_house_device",
+        "qft_income_expend_plan",
+        "qft_joint_bill_expend",
+        "qft_joint_housing",
+        "qft_joint_room",
+        "qft_joint_tenants",
+        "qft_joint_tenants_income",
+        "qft_joint_tenants_income_paid",
+        "qft_paper_contract",
+        "qft_pay_log",
+        "qft_pay_order",
+        "qft_power_finance",
+        "qft_prov_city_area",
+        "qft_renovation",
+        "qft_reserve_housing",
+        "qft_reserve_housing_deal",
+        "qft_reserve_housing_deposit",
+        "qft_rm_renovation_amortization",
+        "qft_rm_renovation_record",
+        "qft_room_bed",
+        "qft_room_bed_tenants",
+        "qft_room_butler",
+        "qft_room_freeze",
+        "qft_room_repair",
+        "qft_smart_device",
+        "qft_smart_electricity_meter_operate_record",
+        "qft_smart_electricity_meter_recharge_record",
+        "qft_smart_electricity_meter_usage_record",
+        "qft_smart_house",
+        "qft_smart_lock_open_record",
+        "qft_smart_lock_operate_record",
+        "qft_smart_lock_statistics",
+        "qft_smart_water_meter_operate_record",
+        "qft_smart_water_meter_recharge_record",
+        "qft_smart_water_meter_usage_record",
+        "qft_store",
+        "qft_tenants_change_houses",
+        "qft_tenants_check_out",
+        "qft_tenants_check_out_one_click",
+        "qft_tenants_cohabit",
+        "qft_tenants_relet",
+        "qft_user",
+        "qft_whole_bill_expend",
+        "qft_whole_housing",
+        "qft_whole_room",
+        "qft_whole_tenants"
+      ],
+      "schema_token_estimate": 57907,
+      "step3_ms": 7635,
+      "generated_sql": "SELECT COUNT(*) AS store_count\nFROM qft_store\nWHERE company_id = 1001\n  AND IFNULL(is_delete, 0) = 0;",
+      "sql_executable": true,
+      "execution_result": [
+        {
+          "store_count": 3
+        }
+      ],
+      "row_count": 1,
+      "error": null,
+      "success": true,
+      "attempts": 1,
+      "step4_ms": 4,
+      "total_ms": 7645,
+      "question_id": "Q01",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "公共基础",
+      "expected_tables": [
+        "qft_store"
+      ],
+      "table_recall": 1.0
+    },
+    {
+      "solution": "A_Baseline",
+      "question": "我们公司管了几个小区？",
+      "model": "GPT-5.4",
+      "step2_ms": 12,
+      "schema_tables": [
+        "qft_area",
+        "qft_area_property",
+        "qft_behalf_pay",
+        "qft_bill",
+        "qft_bill_deduction",
+        "qft_bill_flow_relation",
+        "qft_bill_item",
+        "qft_butler",
+        "qft_common_housing_renewal",
+        "qft_common_tenant_renewal",
+        "qft_company",
+        "qft_electronics_contract",
+        "qft_electronics_contract_sign",
+        "qft_finance",
+        "qft_finance_bank",
+        "qft_finance_close_bill",
+        "qft_finance_energy_fees",
+        "qft_finance_item",
+        "qft_finance_property_fees",
+        "qft_focus_bill_expend",
+        "qft_focus_bill_expend_cost",
+        "qft_focus_delivery_order",
+        "qft_focus_housing",
+        "qft_focus_parent_room",
+        "qft_focus_room",
+        "qft_focus_room_earnest",
+        "qft_focus_tenants",
+        "qft_focus_tenants_income",
+        "qft_focus_tenants_income_paid",
+        "qft_focus_tenants_info",
+        "qft_focus_trust",
+        "qft_house_device",
+        "qft_income_expend_plan",
+        "qft_joint_bill_expend",
+        "qft_joint_housing",
+        "qft_joint_room",
+        "qft_joint_tenants",
+        "qft_joint_tenants_income",
+        "qft_joint_tenants_income_paid",
+        "qft_paper_contract",
+        "qft_pay_log",
+        "qft_pay_order",
+        "qft_power_finance",
+        "qft_prov_city_area",
+        "qft_renovation",
+        "qft_reserve_housing",
+        "qft_reserve_housing_deal",
+        "qft_reserve_housing_deposit",
+        "qft_rm_renovation_amortization",
+        "qft_rm_renovation_record",
+        "qft_room_bed",
+        "qft_room_bed_tenants",
+        "qft_room_butler",
+        "qft_room_freeze",
+        "qft_room_repair",
+        "qft_smart_device",
+        "qft_smart_electricity_meter_operate_record",
+        "qft_smart_electricity_meter_recharge_record",
+        "qft_smart_electricity_meter_usage_record",
+        "qft_smart_house",
+        "qft_smart_lock_open_record",
+        "qft_smart_lock_operate_record",
+        "qft_smart_lock_statistics",
+        "qft_smart_water_meter_operate_record",
+        "qft_smart_water_meter_recharge_record",
+        "qft_smart_water_meter_usage_record",
+        "qft_store",
+        "qft_tenants_change_houses",
+        "qft_tenants_check_out",
+        "qft_tenants_check_out_one_click",
+        "qft_tenants_cohabit",
+        "qft_tenants_relet",
+        "qft_user",
+        "qft_whole_bill_expend",
+        "qft_whole_housing",
+        "qft_whole_room",
+        "qft_whole_tenants"
+      ],
+      "schema_token_estimate": 57907,
+      "step3_ms": 11320401,
+      "generated_sql": "SELECT COUNT(*) AS community_count\nFROM qft_area_property\nWHERE company_id = 1001\n  AND IFNULL(is_delete, 0) = 0;",
+      "sql_executable": true,
+      "execution_result": [
+        {
+          "community_count": 5
+        }
+      ],
+      "row_count": 1,
+      "error": null,
+      "success": true,
+      "attempts": 1,
+      "step4_ms": 38,
+      "total_ms": 11320456,
+      "question_id": "Q02",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "公共基础",
+      "expected_tables": [
+        "qft_area_property"
+      ],
+      "table_recall": 1.0
+    },
+    {
+      "solution": "A_Baseline",
+      "question": "城东门店管了多少套整租房源？",
+      "model": "GPT-5.4",
+      "step2_ms": 18,
+      "schema_tables": [
+        "qft_area",
+        "qft_area_property",
+        "qft_behalf_pay",
+        "qft_bill",
+        "qft_bill_deduction",
+        "qft_bill_flow_relation",
+        "qft_bill_item",
+        "qft_butler",
+        "qft_common_housing_renewal",
+        "qft_common_tenant_renewal",
+        "qft_company",
+        "qft_electronics_contract",
+        "qft_electronics_contract_sign",
+        "qft_finance",
+        "qft_finance_bank",
+        "qft_finance_close_bill",
+        "qft_finance_energy_fees",
+        "qft_finance_item",
+        "qft_finance_property_fees",
+        "qft_focus_bill_expend",
+        "qft_focus_bill_expend_cost",
+        "qft_focus_delivery_order",
+        "qft_focus_housing",
+        "qft_focus_parent_room",
+        "qft_focus_room",
+        "qft_focus_room_earnest",
+        "qft_focus_tenants",
+        "qft_focus_tenants_income",
+        "qft_focus_tenants_income_paid",
+        "qft_focus_tenants_info",
+        "qft_focus_trust",
+        "qft_house_device",
+        "qft_income_expend_plan",
+        "qft_joint_bill_expend",
+        "qft_joint_housing",
+        "qft_joint_room",
+        "qft_joint_tenants",
+        "qft_joint_tenants_income",
+        "qft_joint_tenants_income_paid",
+        "qft_paper_contract",
+        "qft_pay_log",
+        "qft_pay_order",
+        "qft_power_finance",
+        "qft_prov_city_area",
+        "qft_renovation",
+        "qft_reserve_housing",
+        "qft_reserve_housing_deal",
+        "qft_reserve_housing_deposit",
+        "qft_rm_renovation_amortization",
+        "qft_rm_renovation_record",
+        "qft_room_bed",
+        "qft_room_bed_tenants",
+        "qft_room_butler",
+        "qft_room_freeze",
+        "qft_room_repair",
+        "qft_smart_device",
+        "qft_smart_electricity_meter_operate_record",
+        "qft_smart_electricity_meter_recharge_record",
+        "qft_smart_electricity_meter_usage_record",
+        "qft_smart_house",
+        "qft_smart_lock_open_record",
+        "qft_smart_lock_operate_record",
+        "qft_smart_lock_statistics",
+        "qft_smart_water_meter_operate_record",
+        "qft_smart_water_meter_recharge_record",
+        "qft_smart_water_meter_usage_record",
+        "qft_store",
+        "qft_tenants_change_houses",
+        "qft_tenants_check_out",
+        "qft_tenants_check_out_one_click",
+        "qft_tenants_cohabit",
+        "qft_tenants_relet",
+        "qft_user",
+        "qft_whole_bill_expend",
+        "qft_whole_housing",
+        "qft_whole_room",
+        "qft_whole_tenants"
+      ],
+      "schema_token_estimate": 57907,
+      "step3_ms": 12525,
+      "generated_sql": "SELECT s.name AS store_name, COUNT(DISTINCT wh.id) AS whole_housing_count\nFROM qft_store s\nLEFT JOIN qft_whole_housing wh\n  ON wh.store_id = s.id\n  AND wh.company_id = 1001\n  AND IFNULL(wh.is_delete, 0) = 0\n  AND IFNULL(wh.is_check_out, 0) = 0\nWHERE s.company_id = 1001\n  AND IFNULL(s.is_delete, 0) = 0\n  AND s.name = '城东门店'\nGROUP BY s.id, s.name;",
+      "sql_executable": true,
+      "execution_result": [
+        {
+          "store_name": "城东门店",
+          "whole_housing_count": 4
+        }
+      ],
+      "row_count": 1,
+      "error": null,
+      "success": true,
+      "attempts": 1,
+      "step4_ms": 22,
+      "total_ms": 12605,
+      "question_id": "Q03",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "房源",
+      "expected_tables": [
+        "qft_whole_housing"
+      ],
+      "table_recall": 1.0
+    },
+    {
+      "solution": "B_Kuzu",
+      "question": "我们公司一共有几个门店？",
+      "model": "GPT-5.4",
+      "step1_intent": {
+        "entities": [
+          {
+            "text": "门店",
+            "type": "store",
+            "normalized": "store"
+          },
+          {
+            "text": "几个",
+            "type": "metric",
+            "normalized": "count"
+          }
+        ],
+        "query_goal": "count",
+        "business_mode": [],
+        "time_range": null,
+        "search_keywords": [
+          "store"
+        ]
+      },
+      "step1_ms": 8523,
+      "step1_raw": "{\n  \"entities\": [\n    {\n      \"text\": \"门店\",\n      \"type\": \"store\",\n      \"normalized\": \"store\"\n    },\n    {\n      \"text\": \"几个\",\n      \"type\": \"metric\",\n      \"normalized\": \"count\"\n    }\n  ],\n  \"query_goal\": \"count\",\n  \"business_mode\": [],\n  \"time_range\": null,\n  \"search_keywords\": [\"store\"]\n}",
+      "step2_ms": 52,
+      "schema_tables": [
+        "qft_bill",
+        "qft_common_housing_renewal",
+        "qft_finance",
+        "qft_focus_bill_expend",
+        "qft_focus_housing",
+        "qft_focus_parent_room",
+        "qft_focus_room",
+        "qft_focus_room_earnest",
+        "qft_focus_tenants_income",
+        "qft_focus_tenants_income_paid",
+        "qft_income_expend_plan",
+        "qft_joint_bill_expend",
+        "qft_joint_housing",
+        "qft_joint_room",
+        "qft_joint_tenants_income",
+        "qft_joint_tenants_income_paid",
+        "qft_pay_log",
+        "qft_prov_city_area",
+        "qft_reserve_housing",
+        "qft_room_repair"
+      ],
+      "schema_token_estimate": 24566,
+      "success": false,
+      "error": "Connection error.",
+      "total_ms": 11212837,
+      "question_id": "Q01",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "公共基础",
+      "expected_tables": [
+        "qft_store"
+      ],
+      "table_recall": 0.0
+    },
+    {
+      "solution": "B_Kuzu",
+      "question": "我们公司管了几个小区？",
+      "model": "GPT-5.4",
+      "step1_intent": {
+        "entities": [
+          {
+            "text": "小区",
+            "type": "location",
+            "normalized": "area_property"
+          },
+          {
+            "text": "几个",
+            "type": "metric",
+            "normalized": "count"
+          }
+        ],
+        "query_goal": "count",
+        "business_mode": [],
+        "time_range": null,
+        "search_keywords": [
+          "area_property",
+          "area",
+          "property"
+        ]
+      },
+      "step1_ms": 15337,
+      "step1_raw": "{\n  \"entities\": [\n    {\n      \"text\": \"小区\",\n      \"type\": \"location\",\n      \"normalized\": \"area_property\"\n    },\n    {\n      \"text\": \"几个\",\n      \"type\": \"metric\",\n      \"normalized\": \"count\"\n    }\n  ],\n  \"query_goal\": \"count\",\n  \"business_mode\": [],\n  \"time_range\": null,\n  \"search_keywords\": [\n    \"area_property\",\n    \"area\",\n    \"property\"\n  ]\n}",
+      "step2_ms": 84,
+      "schema_tables": [
+        "qft_area",
+        "qft_area_property",
+        "qft_bill",
+        "qft_common_housing_renewal",
+        "qft_company",
+        "qft_finance",
+        "qft_finance_property_fees",
+        "qft_focus_bill_expend",
+        "qft_focus_housing",
+        "qft_focus_parent_room",
+        "qft_focus_room",
+        "qft_focus_room_earnest",
+        "qft_focus_tenants_income",
+        "qft_focus_tenants_income_paid",
+        "qft_income_expend_plan",
+        "qft_joint_bill_expend",
+        "qft_joint_housing",
+        "qft_joint_room",
+        "qft_joint_tenants_income",
+        "qft_joint_tenants_income_paid"
+      ],
+      "schema_token_estimate": 23530,
+      "success": false,
+      "error": "'NoneType' object has no attribute 'strip'",
+      "total_ms": 143510,
+      "question_id": "Q02",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "公共基础",
+      "expected_tables": [
+        "qft_area_property"
+      ],
+      "table_recall": 1.0
+    },
+    {
+      "solution": "B_Kuzu",
+      "question": "城东门店管了多少套整租房源？",
+      "model": "GPT-5.4",
+      "step1_intent": {
+        "entities": [
+          {
+            "text": "城东门店",
+            "type": "store",
+            "normalized": "城东门店"
+          },
+          {
+            "text": "整租房源",
+            "type": "housing",
+            "normalized": "whole_housing"
+          },
+          {
+            "text": "多少套",
+            "type": "metric",
+            "normalized": "count"
+          }
+        ],
+        "query_goal": "count",
+        "business_mode": [
+          "whole"
+        ],
+        "time_range": null,
+        "search_keywords": [
+          "whole_housing",
+          "housing",
+          "store"
+        ]
+      },
+      "step1_ms": 8545,
+      "step1_raw": "{\n  \"entities\": [\n    {\n      \"text\": \"城东门店\",\n      \"type\": \"store\",\n      \"normalized\": \"城东门店\"\n    },\n    {\n      \"text\": \"整租房源\",\n      \"type\": \"housing\",\n      \"normalized\": \"whole_housing\"\n    },\n    {\n      \"text\": \"多少套\",\n      \"type\": \"metric\",\n      \"normalized\": \"count\"\n    }\n  ],\n  \"query_goal\": \"count\",\n  \"business_mode\": [\n    \"whole\"\n  ],\n  \"time_range\": null,\n  \"search_keywords\": [\n    \"whole_housing\",\n    \"housing\",\n    \"store\"\n  ]\n}",
+      "step2_ms": 88,
+      "schema_tables": [
+        "qft_area_property",
+        "qft_bill",
+        "qft_butler",
+        "qft_common_housing_renewal",
+        "qft_finance",
+        "qft_focus_bill_expend",
+        "qft_focus_bill_expend_cost",
+        "qft_focus_delivery_order",
+        "qft_focus_housing",
+        "qft_focus_parent_room",
+        "qft_focus_room",
+        "qft_focus_room_earnest",
+        "qft_focus_tenants_income",
+        "qft_focus_tenants_income_paid",
+        "qft_focus_trust",
+        "qft_income_expend_plan",
+        "qft_joint_bill_expend",
+        "qft_joint_housing",
+        "qft_joint_room",
+        "qft_joint_tenants_income"
+      ],
+      "schema_token_estimate": 22246,
+      "success": false,
+      "error": "'NoneType' object has no attribute 'strip'",
+      "total_ms": 134333,
+      "question_id": "Q03",
+      "category": "L1_single_table",
+      "difficulty": "easy",
+      "domain": "房源",
+      "expected_tables": [
+        "qft_whole_housing"
+      ],
+      "table_recall": 0.0
+    }
+  ]
+}

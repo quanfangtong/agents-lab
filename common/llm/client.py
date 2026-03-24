@@ -34,9 +34,10 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         model: ModelType = ModelType.GPT5,
-        temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        temperature: float = 0.0,
+        max_tokens: Optional[int] = 16000,
         timeout: Optional[int] = 120,
+        reasoning: bool = True,
         **kwargs,
     ) -> str:
         """
@@ -45,21 +46,34 @@ class LLMClient:
         Args:
             messages: List of message dictionaries with 'role' and 'content'
             model: Model type to use
-            temperature: Sampling temperature (0-1)
+            temperature: Sampling temperature (0 for deterministic SQL generation)
             max_tokens: Maximum tokens to generate
             timeout: Request timeout in seconds (default 120)
+            reasoning: Enable extended thinking/reasoning (default True)
             **kwargs: Additional parameters for the API
 
         Returns:
             Generated text response
         """
         try:
+            extra_body = kwargs.pop("extra_body", {})
+
+            if reasoning:
+                if model == ModelType.GPT5:
+                    extra_body["reasoning"] = {"effort": "high"}
+                elif model == ModelType.OPUS:
+                    extra_body["reasoning"] = {
+                        "type": "enabled",
+                        "budget_tokens": 32000,
+                    }
+
             response = self.client.chat.completions.create(
                 model=model.model_name,
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 timeout=float(timeout),
+                extra_body=extra_body if extra_body else None,
                 **kwargs,
             )
 
@@ -80,8 +94,8 @@ class LLMClient:
         prompt: str,
         model: ModelType = ModelType.GPT5,
         system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
+        temperature: float = 0.0,
+        max_tokens: Optional[int] = 16000,
     ) -> str:
         """
         Send a simple query with optional system prompt.
@@ -90,7 +104,7 @@ class LLMClient:
             prompt: User prompt
             model: Model type to use
             system_prompt: Optional system prompt
-            temperature: Sampling temperature
+            temperature: Sampling temperature (0 for SQL generation)
             max_tokens: Maximum tokens to generate
 
         Returns:
