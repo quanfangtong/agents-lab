@@ -123,7 +123,7 @@ export function SolutionComparison() {
       <h3 style={{ fontSize: 18, marginBottom: 16 }}>查询流程对比</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={{ background: '#161b22', border: '1px solid #21262d', borderRadius: 8, padding: 16 }}>
-          <h4 style={{ fontSize: 14, marginBottom: 12, color: '#8b949e' }}>Baseline（无图）</h4>
+          <h4 style={{ fontSize: 14, marginBottom: 12, color: '#8b949e' }}>Text2SQL（无图）</h4>
           <pre style={{ fontSize: 12, lineHeight: 1.8, color: '#79c0ff', whiteSpace: 'pre-wrap' }}>
 {`用户提问
   ↓

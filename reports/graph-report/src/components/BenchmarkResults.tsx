@@ -34,14 +34,14 @@ import rawBenchmark from '../data/benchmarkData.json'
 const benchmarkData = rawBenchmark as unknown as BenchmarkData
 
 const SOLUTION_COLORS: Record<string, string> = {
-  'A_Baseline': '#8b949e',
+  'A_Text2SQL': '#8b949e',
   'B_Kuzu': '#10b981',
   'C_Neo4j': '#3b82f6',
   'D_FalkorDB': '#f59e0b',
 }
 
 const SOLUTION_LABELS: Record<string, string> = {
-  'A_Baseline': 'A. Baseline',
+  'A_Text2SQL': 'A. Baseline',
   'B_Kuzu': 'B. Kuzu',
   'C_Neo4j': 'C. Neo4j',
   'D_FalkorDB': 'D. FalkorDB',

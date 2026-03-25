@@ -19,11 +19,11 @@ from loguru import logger
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from common.llm import get_llm_client, ModelType
-from solutions.baseline_text2sql import BaselineSolution
+from solutions.baseline_text2sql import Text2SQLSolution
 from solutions.graph_kuzu import KuzuSolution
 
 SOLUTIONS_MAP = {
-    "A": BaselineSolution,
+    "A": Text2SQLSolution,
     "B": KuzuSolution,
 }
 
@@ -53,102 +53,114 @@ def load_questions(limit: int = 0) -> list[dict]:
     return questions
 
 
-def run_solution_batch(sol_key: str, models: list[ModelType], questions: list[dict]) -> list[dict]:
-    """跑单个方案的全部题目（用于并行）"""
+
+def run_single_combo(sol_key: str, model: ModelType, questions: list[dict]) -> list[dict]:
+    """跑单个 (方案, 模型) 组合的全部题目"""
     if sol_key not in SOLUTIONS_MAP:
         logger.warning(f"Solution {sol_key} not available")
         return []
 
     llm = get_llm_client()
     sol = SOLUTIONS_MAP[sol_key]()
-    logger.info(f"[{sol.name}] Setting up...")
+    logger.info(f"[{sol.name}/{model.value}] Setting up...")
     try:
         sol.setup()
     except Exception as e:
-        logger.error(f"[{sol.name}] Setup failed: {e}")
+        logger.error(f"[{sol.name}/{model.value}] Setup failed: {e}")
         return []
-    logger.info(f"[{sol.name}] Setup complete")
 
     results = []
-    for model in models:
-        for q in questions:
-            qid = q["id"]
-            question = q["question"]
-            logger.info(f"[{sol.name}/{model.value}] [{qid}] {question[:35]}...")
+    for q in questions:
+        qid = q["id"]
+        question = q["question"]
+        logger.info(f"[{sol.name}/{model.value}] [{qid}] {question[:35]}...")
+        try:
+            result = sol.run(question, llm, model)
+        except Exception as e:
+            result = {"solution": sol.name, "question": question, "model": model.display_name, "success": False, "error": str(e)[:300]}
 
-            try:
-                result = sol.run(question, llm, model)
-            except Exception as e:
-                result = {
-                    "solution": sol.name, "question": question,
-                    "model": model.display_name, "success": False,
-                    "error": str(e)[:300],
-                }
+        result["question_id"] = qid
+        result["category"] = q.get("category", "")
+        result["difficulty"] = q.get("difficulty", "")
+        result["domain"] = q.get("domain", "")
+        result["expected_tables"] = q.get("expected_tables", [])
 
-            result["question_id"] = qid
-            result["category"] = q.get("category", "")
-            result["difficulty"] = q.get("difficulty", "")
-            result["domain"] = q.get("domain", "")
-            result["expected_tables"] = q.get("expected_tables", [])
+        if result.get("schema_tables") and result.get("expected_tables"):
+            found = set(result["schema_tables"])
+            expected = set(result["expected_tables"])
+            result["table_recall"] = len(found & expected) / len(expected) if expected else 0
+        else:
+            result["table_recall"] = None
 
-            if result.get("schema_tables") and result.get("expected_tables"):
-                found = set(result["schema_tables"])
-                expected = set(result["expected_tables"])
-                result["table_recall"] = len(found & expected) / len(expected) if expected else 0
-            else:
-                result["table_recall"] = None
-
-            status = "OK" if result.get("success") else "FAIL"
-            ms = result.get("total_ms", 0)
-            logger.info(f"[{sol.name}/{model.value}] [{qid}] -> {status} ({ms}ms)")
-            results.append(result)
+        status = "OK" if result.get("success") else "FAIL"
+        ms = result.get("total_ms", 0)
+        logger.info(f"[{sol.name}/{model.value}] [{qid}] -> {status} ({ms}ms)")
+        results.append(result)
 
     return results
 
 
 def run_benchmark(solutions: list[str], models: list[ModelType], questions: list[dict]):
-    """全部方案并行跑"""
+    """全并行：每个 (方案, 模型) 组合一个线程"""
     from concurrent.futures import ThreadPoolExecutor, as_completed
     import shutil
 
-    total = len(solutions) * len(models) * len(questions)
-    logger.info(f"Running {len(solutions)} solutions ALL PARALLEL ({total} total calls)")
+    combos = [(sol, model) for sol in solutions for model in models]
+    total = len(combos) * len(questions)
+    logger.info(f"Running {len(combos)} combos ALL PARALLEL ({total} total calls)")
 
-    # Kuzu 需要独立的数据库副本（嵌入式锁限制）
+    # Kuzu 需要每个 combo 一个独立的数据库副本
     kuzu_src = Path(__file__).resolve().parents[1] / "data" / "kuzu_datamart_graph"
-    kuzu_copy = Path(__file__).resolve().parents[1] / "data" / "kuzu_datamart_graph_bench"
-    if "B" in solutions and kuzu_src.exists():
-        if kuzu_copy.exists():
-            if kuzu_copy.is_dir():
-                shutil.rmtree(kuzu_copy)
+    kuzu_copies = []
+    kuzu_combos = [(s, m) for s, m in combos if s == "B"]
+    for i, (sol_key, model) in enumerate(kuzu_combos):
+        copy_path = Path(__file__).resolve().parents[1] / "data" / f"kuzu_bench_{i}"
+        if copy_path.exists():
+            shutil.rmtree(copy_path) if copy_path.is_dir() else copy_path.unlink()
+        if kuzu_src.exists():
+            if kuzu_src.is_dir():
+                shutil.copytree(kuzu_src, copy_path)
             else:
-                kuzu_copy.unlink()
-        shutil.copy2(kuzu_src, kuzu_copy)
-        from solutions import graph_kuzu
-        graph_kuzu.KUZU_DB_PATH = str(kuzu_copy)
-        logger.info(f"Kuzu DB copied to {kuzu_copy} for parallel access")
+                shutil.copy2(kuzu_src, copy_path)
+            kuzu_copies.append(copy_path)
+
+    # 为每个 Kuzu combo 设置独立路径
+    kuzu_path_map = {}
+    for i, (sol_key, model) in enumerate(kuzu_combos):
+        if i < len(kuzu_copies):
+            kuzu_path_map[(sol_key, model.value)] = str(kuzu_copies[i])
 
     all_results = []
-    with ThreadPoolExecutor(max_workers=min(5, len(solutions))) as executor:
+    max_workers = min(4, len(combos))
+
+    def run_combo(sol_key, model):
+        # 如果是 Kuzu，临时修改路径
+        if sol_key == "B" and (sol_key, model.value) in kuzu_path_map:
+            from solutions import graph_kuzu
+            graph_kuzu.KUZU_DB_PATH = kuzu_path_map[(sol_key, model.value)]
+        return run_single_combo(sol_key, model, questions)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(run_solution_batch, sol_key, models, questions): sol_key
-            for sol_key in solutions
+            executor.submit(run_combo, sol, model): (sol, model)
+            for sol, model in combos
         }
         for future in as_completed(futures):
-            sol_key = futures[future]
+            sol, model = futures[future]
             try:
                 results = future.result()
                 all_results.extend(results)
-                logger.info(f"[{sol_key}] Completed: {len(results)} results")
+                success = sum(1 for r in results if r.get("success"))
+                logger.info(f"[{sol}/{model.value}] Done: {success}/{len(results)}")
             except Exception as e:
-                logger.error(f"[{sol_key}] Failed: {e}")
+                logger.error(f"[{sol}/{model.value}] Failed: {e}")
 
     # 清理 Kuzu 副本
-    if kuzu_copy.exists():
-        if kuzu_copy.is_dir():
-            shutil.rmtree(kuzu_copy, ignore_errors=True)
-        else:
-            kuzu_copy.unlink(missing_ok=True)
+    for p in kuzu_copies:
+        try:
+            shutil.rmtree(p) if p.is_dir() else p.unlink()
+        except Exception:
+            pass
 
     return all_results
 
@@ -185,14 +197,14 @@ def summarize(results: list[dict]) -> dict:
 def main():
     parser = argparse.ArgumentParser(description="Multi-Solution Benchmark")
     parser.add_argument("--solutions", default="A,B,C,D", help="Comma-separated solution keys (A,B,C,D)")
-    parser.add_argument("--models", default="gpt5", help="Comma-separated: gpt5,opus")
+    parser.add_argument("--models", default="gpt5", help="Comma-separated: gpt5,gpt5mini,opus,sonnet")
     parser.add_argument("--questions", type=int, default=0, help="Limit number of questions (0=all)")
     args = parser.parse_args()
 
     load_optional_solutions()
 
     sol_keys = [s.strip() for s in args.solutions.split(",")]
-    model_map = {"gpt5": ModelType.GPT5, "opus": ModelType.OPUS}
+    model_map = {"gpt5": ModelType.GPT5, "gpt5mini": ModelType.GPT5_MINI, "opus": ModelType.OPUS, "sonnet": ModelType.SONNET}
     models = [model_map[m.strip()] for m in args.models.split(",") if m.strip() in model_map]
     questions = load_questions(args.questions)
 

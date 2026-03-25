@@ -59,9 +59,9 @@ class LLMClient:
             extra_body = kwargs.pop("extra_body", {})
 
             if reasoning:
-                if model == ModelType.GPT5:
+                if model in (ModelType.GPT5, ModelType.GPT5_MINI):
                     extra_body["reasoning"] = {"effort": "high"}
-                elif model == ModelType.OPUS:
+                elif model in (ModelType.OPUS, ModelType.SONNET):
                     extra_body["reasoning"] = {
                         "type": "enabled",
                         "budget_tokens": 32000,
