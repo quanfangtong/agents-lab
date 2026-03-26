@@ -1,14 +1,16 @@
-"""公共模块：数据集市连接、多步 Pipeline、Prompt 模板"""
+"""公共模块：数据集市连接、多步 Pipeline、Prompt 模板、图谱方案基类"""
 
-import os
 import time
 import json
+import threading
 import pymysql
-from typing import Optional
+from pathlib import Path
 from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 
 load_dotenv()
+
+UNIFIED_SCHEMA_PATH = Path(__file__).resolve().parents[1] / "data" / "unified_schema.json"
 
 DATAMART_CONFIG = {
     "host": "127.0.0.1",
@@ -23,19 +25,7 @@ DATAMART_CONFIG = {
 
 COMPANY_ID = 1001
 
-# ========== Step 0: 预分类信号词 ==========
-QUERY_SIGNALS = [
-    "多少", "几个", "几套", "几间", "哪些", "哪个", "有没有", "有多少",
-    "统计", "汇总", "合计", "总共", "一共", "分别", "各", "每个",
-    "排名", "最多", "最少", "最高", "最低", "最贵", "最便宜", "前",
-    "欠费", "空置", "出租率", "到期", "逾期", "未交", "未付",
-    "收入", "支出", "利润", "流水", "账单", "租金", "费用",
-    "租客", "房源", "房间", "门店", "合同", "装修", "设备",
-    "查", "看看", "帮我", "列出", "告诉",
-]
-
-def is_data_query(question: str) -> bool:
-    return any(s in question for s in QUERY_SIGNALS)
+BUSINESS_MODES = ["whole", "joint", "focus"]
 
 
 # ========== Step 1: 意图分析 Prompt ==========
@@ -185,6 +175,30 @@ def get_tables_ddl(conn: pymysql.Connection, table_names: list[str]) -> str:
             pass
     return "\n\n".join(ddls)
 
+
+# 轻量 schema 缓存
+_unified_schema_cache = None
+
+def get_lightweight_schema(table_names: list[str]) -> str:
+    """构造轻量 schema 文本（与 Text2SQL 格式一致：表名+注释+列名列表）"""
+    global _unified_schema_cache
+    if _unified_schema_cache is None:
+        with open(UNIFIED_SCHEMA_PATH) as f:
+            _unified_schema_cache = {t["name"]: t for t in json.load(f)["tables"]}
+
+    parts = []
+    for name in table_names:
+        t = _unified_schema_cache.get(name)
+        if not t:
+            continue
+        cols_str = ", ".join(
+            f"{c['name']}({c['type']}, {c['comment']})" if c['comment']
+            else f"{c['name']}({c['type']})"
+            for c in t["columns"]
+        )
+        parts.append(f"-- {t['name']}: {t['comment']}\n-- 列: {cols_str}")
+    return "\n\n".join(parts)
+
 def execute_sql(conn: pymysql.Connection, sql: str) -> dict:
     try:
         with conn.cursor(pymysql.cursors.DictCursor) as cur:
@@ -281,16 +295,21 @@ class Solution(ABC):
                     model=model,
                     temperature=0.0,
                     max_tokens=2000,
-                    timeout=60,
+                    timeout=300,
                 )
                 intent = parse_intent_json(raw_intent)
                 result["step1_intent"] = intent
                 result["step1_ms"] = int((time.time() - t1) * 1000)
                 result["step1_raw"] = raw_intent[:500]
 
-            # ===== Step 2: Schema 获取 =====
+            # ===== Step 2: Schema 获取（线程安全）=====
             t2 = time.time()
-            schema_ctx, tables = self.get_schema_context(question, intent)
+            _lock = getattr(self, '_lock', None)
+            if _lock:
+                with _lock:
+                    schema_ctx, tables = self.get_schema_context(question, intent)
+            else:
+                schema_ctx, tables = self.get_schema_context(question, intent)
             result["step2_ms"] = int((time.time() - t2) * 1000)
             result["schema_tables"] = tables
             result["schema_token_estimate"] = len(schema_ctx) // 4
@@ -298,7 +317,11 @@ class Solution(ABC):
             # ===== Step 3: SQL 生成 =====
             t3 = time.time()
             if self.is_graph_solution:
-                graph_ctx = self.get_graph_context(question, intent)
+                if _lock:
+                    with _lock:
+                        graph_ctx = self.get_graph_context(question, intent)
+                else:
+                    graph_ctx = self.get_graph_context(question, intent)
                 prompt = GRAPH_SQL_PROMPT.format(
                     company_id=COMPANY_ID,
                     intent_analysis=json.dumps(intent, ensure_ascii=False, indent=2),
@@ -320,15 +343,15 @@ class Solution(ABC):
                 model=model,
                 temperature=0.0,
                 max_tokens=8000,
-                timeout=120,
+                timeout=300,
             )
             sql = clean_sql(raw_sql)
             result["step3_ms"] = int((time.time() - t3) * 1000)
             result["generated_sql"] = sql
 
-            # ===== Step 4: 执行 + 自纠错（最多 3 轮）=====
+            # ===== Step 4: 执行（无自纠错）=====
             t4 = time.time()
-            max_retries = 3
+            max_retries = 1
             for attempt in range(max_retries):
                 exec_result = execute_sql(conn, sql)
 
@@ -357,7 +380,7 @@ class Solution(ABC):
                             model=model,
                             temperature=0.0,
                             max_tokens=8000,
-                            timeout=60,
+                            timeout=300,
                         )
                         sql = clean_sql(correction)
                         result["generated_sql"] = sql  # 更新为最新的
@@ -380,3 +403,103 @@ class Solution(ABC):
             conn.close()
 
         return result
+
+
+# ========== 关系推断（Neo4j/FalkorDB _import_schema 共用）==========
+
+def infer_targets(src_table: str, col_name: str, all_tables: list[str]) -> list[str]:
+    """根据 _id 列名推断目标表（仅用于运行时 schema 导入）"""
+    EXACT_MAP = {
+        "store_id": ["qft_store"],
+        "area_id": ["qft_area"],
+        "butler_id": ["qft_butler"],
+        "device_id": ["qft_smart_device"],
+    }
+    if col_name in EXACT_MAP:
+        return [t for t in EXACT_MAP[col_name] if t in all_tables]
+
+    if col_name in ("housing_id", "room_id", "tenants_id", "tenant_id"):
+        prefix = next((p for p in BUSINESS_MODES if p in src_table), "")
+        stem = col_name.replace("_id", "").rstrip("s")
+        return [
+            t for t in all_tables
+            if ((prefix and prefix in t and stem in t) or (not prefix and stem in t))
+            and t != src_table
+        ][:3]
+
+    stem = col_name.replace("_id", "")
+    return [t for t in all_tables if stem in t and t != src_table][:2]
+
+
+# ========== 图谱方案基类 ==========
+
+class GraphSolution(Solution):
+    """Kuzu / Neo4j / FalkorDB 的公共基类，封装表选择、模式补全、schema/graph 上下文构建。"""
+
+    is_graph_solution = True
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._all_tables: set[str] = set()
+        self._cached_tables: list[str] | None = None
+
+    # ---------- 子类必须实现 ----------
+
+    @abstractmethod
+    def _search(self, keywords: list[str]) -> set[str]:
+        """用关键词在图谱中 CONTAINS 搜索表名"""
+
+    @abstractmethod
+    def _expand(self, tables: set[str]) -> set[str]:
+        """沿 REFERENCES 边扩展一跳"""
+
+    @abstractmethod
+    def _get_joins(self, table_list: list[str]) -> list[str]:
+        """获取表间 JOIN 路径文本"""
+
+    # ---------- 公共逻辑 ----------
+
+    def _complete_business_modes(self, tables: set[str]) -> set[str]:
+        """业务模式补全：找到 focus_housing 就自动补上 whole_housing、joint_housing"""
+        completed: set[str] = set()
+        for t in tables:
+            for mode in BUSINESS_MODES:
+                if f"_{mode}_" in t:
+                    for other in BUSINESS_MODES:
+                        if other != mode:
+                            variant = t.replace(f"_{mode}_", f"_{other}_")
+                            if variant in self._all_tables:
+                                completed.add(variant)
+                    break
+        return completed
+
+    def _select_tables(self, keywords: list[str]) -> list[str]:
+        """优先级表选择：直接匹配 + 模式补全全保留，扩展按需补充"""
+        direct = self._search(keywords)
+        mode_tables = self._complete_business_modes(direct)
+        core = direct | mode_tables
+
+        if len(core) < 15:
+            extra = self._expand(direct) - core
+        else:
+            extra = set()
+
+        return sorted(core) + sorted(extra)
+
+    def get_schema_context(self, question: str, intent: dict = None) -> tuple[str, list[str]]:
+        """用 intent 中的 search_keywords 驱动图谱搜索"""
+        keywords = (intent or {}).get("search_keywords", ["housing", "tenants", "room"])
+        table_list = self._select_tables(keywords)
+        self._cached_tables = table_list
+        return get_lightweight_schema(table_list), table_list
+
+    def get_graph_context(self, question: str, intent: dict) -> dict:
+        """返回图谱的结构化分析（复用 get_schema_context 的表列表）"""
+        table_list = self._cached_tables
+        if table_list is None:
+            table_list = self._select_tables(intent.get("search_keywords", []))
+        joins = self._get_joins(table_list)
+        return {
+            "recommended_tables": "\n".join(f"- {t}" for t in table_list),
+            "join_paths": "\n".join(f"- {j}" for j in joins) if joins else "请根据 _id 字段推断",
+        }

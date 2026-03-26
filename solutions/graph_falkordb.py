@@ -1,18 +1,18 @@
-"""方案 D: FalkorDB Schema Graph — LLM 意图分析 + FalkorDB 图遍历"""
+"""方案 D: FalkorDB Schema Graph -- LLM 意图分析 + FalkorDB 图遍历"""
 
 from falkordb import FalkorDB
-from .common import Solution, get_datamart_connection, get_tables_ddl, get_all_tables
+from .common import GraphSolution, get_datamart_connection, get_all_tables, infer_targets
 
 FALKORDB_HOST = "localhost"
 FALKORDB_PORT = 6379
 GRAPH_NAME = "qft_schema"
 
 
-class FalkorDBSolution(Solution):
+class FalkorDBSolution(GraphSolution):
     name = "D_FalkorDB"
-    is_graph_solution = True
 
     def __init__(self):
+        super().__init__()
         self._db = None
         self._graph = None
 
@@ -21,13 +21,16 @@ class FalkorDBSolution(Solution):
         self._graph = self._db.select_graph(GRAPH_NAME)
         try:
             result = self._graph.query("MATCH (t:TableNode) RETURN count(t) AS c")
-            if result.result_set and result.result_set[0][0] > 0:
-                return
+            if result.result_set and result.result_set[0][0] == 0:
+                self._import_schema()
         except Exception:
-            pass
-        self._import_schema()
+            self._import_schema()
+        result = self._graph.query("MATCH (t:TableNode) RETURN t.name")
+        for row in result.result_set:
+            self._all_tables.add(row[0])
 
     def _import_schema(self):
+        """从 MySQL 读取元数据并导入 FalkorDB（仅在图谱为空时触发）"""
         conn = get_datamart_connection()
         tables = get_all_tables(conn)
         for tbl in tables:
@@ -41,57 +44,56 @@ class FalkorDBSolution(Solution):
                 AND COLUMN_NAME NOT IN ('company_id','creater_id','updater_id','deleter_id')
             """)
             for col_name, comment in cur.fetchall():
-                targets = self._infer_targets(tbl, col_name, tables)
-                for target in targets:
+                for target in infer_targets(tbl, col_name, tables):
                     try:
                         self._graph.query(
-                            "MATCH (a:TableNode {name:$s}),(b:TableNode {name:$t}) CREATE (a)-[:REFERENCES {column_name:$c, comment:$cm}]->(b)",
-                            {"s": tbl, "t": target, "c": col_name, "cm": comment or ""})
+                            "MATCH (a:TableNode {name:$s}),(b:TableNode {name:$t}) "
+                            "CREATE (a)-[:REFERENCES {column_name:$c, comment:$cm}]->(b)",
+                            {"s": tbl, "t": target, "c": col_name, "cm": comment or ""},
+                        )
                     except Exception:
                         pass
         conn.close()
 
-    def _infer_targets(self, src, col, tables):
-        if col == "store_id": return ["qft_store"] if "qft_store" in tables else []
-        if col == "area_id": return ["qft_area"] if "qft_area" in tables else []
-        if col == "butler_id": return ["qft_butler"] if "qft_butler" in tables else []
-        if col == "device_id": return ["qft_smart_device"] if "qft_smart_device" in tables else []
-        if col in ("housing_id","room_id","tenants_id","tenant_id"):
-            prefix = next((p for p in ("whole","joint","focus") if p in src), "")
-            stem = col.replace("_id","").rstrip("s")
-            return [t for t in tables if (prefix and prefix in t and stem in t) or (not prefix and stem in t) if t != src][:3]
-        stem = col.replace("_id","")
-        return [t for t in tables if stem in t and t != src][:2]
+    # ---------- 图谱操作（FalkorDB 特有）----------
 
-    def _search(self, keywords):
-        matched = set()
+    def _search(self, keywords: list[str]) -> set[str]:
+        matched: set[str] = set()
         for kw in keywords:
             try:
-                result = self._graph.query("MATCH (t:TableNode) WHERE t.name CONTAINS $s RETURN t.name", {"s": kw})
+                result = self._graph.query(
+                    "MATCH (t:TableNode) WHERE t.name CONTAINS $s RETURN t.name", {"s": kw},
+                )
                 for row in result.result_set:
                     matched.add(row[0])
             except Exception:
                 pass
         return matched
 
-    def _expand(self, tables):
+    def _expand(self, tables: set[str]) -> set[str]:
         expanded = set(tables)
         for tbl in tables:
             try:
-                result = self._graph.query("MATCH (a:TableNode {name:$n})-[:REFERENCES]-(b:TableNode) RETURN DISTINCT b.name", {"n": tbl})
+                result = self._graph.query(
+                    "MATCH (a:TableNode {name:$n})-[:REFERENCES]-(b:TableNode) RETURN DISTINCT b.name",
+                    {"n": tbl},
+                )
                 for row in result.result_set:
                     expanded.add(row[0])
             except Exception:
                 pass
         return expanded
 
-    def _get_joins(self, table_list):
-        joins, seen = [], set()
+    def _get_joins(self, table_list: list[str]) -> list[str]:
+        joins: list[str] = []
+        seen: set[str] = set()
         for tbl in table_list:
             try:
                 result = self._graph.query(
-                    "MATCH (a:TableNode {name:$n})-[r:REFERENCES]->(b:TableNode) WHERE b.name IN $t RETURN a.name, r.column_name, r.comment, b.name",
-                    {"n": tbl, "t": table_list})
+                    "MATCH (a:TableNode {name:$n})-[r:REFERENCES]->(b:TableNode) "
+                    "WHERE b.name IN $t RETURN a.name, r.column_name, r.comment, b.name",
+                    {"n": tbl, "t": table_list},
+                )
                 for row in result.result_set:
                     key = f"{row[0]}.{row[1]}->{row[3]}"
                     if key not in seen:
@@ -101,20 +103,3 @@ class FalkorDBSolution(Solution):
             except Exception:
                 pass
         return joins
-
-    def get_schema_context(self, question, intent=None):
-        keywords = (intent or {}).get("search_keywords", ["housing","tenants","room"])
-        table_list = sorted(self._expand(self._search(keywords)))[:20]
-        conn = get_datamart_connection()
-        ddl = get_tables_ddl(conn, table_list)
-        conn.close()
-        return ddl, table_list
-
-    def get_graph_context(self, question, intent):
-        keywords = intent.get("search_keywords", [])
-        table_list = sorted(self._expand(self._search(keywords)))[:20]
-        joins = self._get_joins(table_list)
-        return {
-            "recommended_tables": "\n".join(f"- {t}" for t in table_list),
-            "join_paths": "\n".join(f"- {j}" for j in joins) if joins else "请根据 _id 字段推断",
-        }

@@ -1,34 +1,54 @@
-"""LLM client for interacting with OpenRouter models."""
+"""LLM client supporting Azure OpenAI and OpenRouter."""
 
 import os
-from typing import Optional, List, Dict, Any
-from openai import OpenAI
+import time
+import threading
+from typing import Optional, List, Dict
+from openai import AzureOpenAI, OpenAI
 from loguru import logger
 from dotenv import load_dotenv
 
 from .models import ModelType
 
-# Load environment variables
 load_dotenv()
 
 
 class LLMClient:
-    """Client for interacting with LLM models via OpenRouter."""
+    """Unified LLM client: Azure OpenAI (primary) with OpenRouter fallback."""
 
     def __init__(self):
-        """Initialize LLM client with OpenRouter configuration."""
-        self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        self.provider = os.getenv("LLM_PROVIDER", "azure")
 
-        if not self.api_key:
-            raise ValueError("OPENROUTER_API_KEY not found in environment variables")
+        if self.provider == "azure":
+            endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+            api_key = os.getenv("AZURE_OPENAI_KEY")
+            if not endpoint or not api_key:
+                raise ValueError("AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_KEY must be set in environment")
+            self.client = AzureOpenAI(
+                azure_endpoint=endpoint,
+                api_key=api_key,
+                api_version=os.getenv("AZURE_API_VERSION", "2025-04-01-preview"),
+            )
+            logger.info("Initialized LLMClient with Azure OpenAI")
+        else:
+            api_key = os.getenv("OPENROUTER_API_KEY")
+            base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            if not api_key:
+                raise ValueError("OPENROUTER_API_KEY not found")
+            self.client = OpenAI(api_key=api_key, base_url=base_url)
+            logger.info("Initialized LLMClient with OpenRouter")
 
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url,
-        )
-
-        logger.info("Initialized LLMClient with OpenRouter")
+    def _get_deployment_name(self, model: ModelType) -> str:
+        """Map ModelType to Azure deployment name."""
+        if self.provider == "azure":
+            return {
+                ModelType.GPT5: "gpt-5.4",
+                ModelType.GPT5_MINI: "gpt-5.4",  # Azure 只有 gpt-5.4
+                ModelType.OPUS: "gpt-5.4",
+                ModelType.SONNET: "gpt-5.4",
+            }.get(model, "gpt-5.4")
+        else:
+            return model.model_name
 
     def chat_completion(
         self,
@@ -36,58 +56,80 @@ class LLMClient:
         model: ModelType = ModelType.GPT5,
         temperature: float = 0.0,
         max_tokens: Optional[int] = 16000,
-        timeout: Optional[int] = 120,
+        timeout: Optional[int] = 300,
         reasoning: bool = True,
+        max_retries: int = 5,
         **kwargs,
     ) -> str:
-        """
-        Send a chat completion request.
+        deployment = self._get_deployment_name(model)
+        last_error = None
 
-        Args:
-            messages: List of message dictionaries with 'role' and 'content'
-            model: Model type to use
-            temperature: Sampling temperature (0 for deterministic SQL generation)
-            max_tokens: Maximum tokens to generate
-            timeout: Request timeout in seconds (default 120)
-            reasoning: Enable extended thinking/reasoning (default True)
-            **kwargs: Additional parameters for the API
+        for attempt in range(max_retries):
+            try:
+                if self.provider == "azure":
+                    input_text = ""
+                    for msg in messages:
+                        role = msg["role"]
+                        content = msg["content"]
+                        if role == "system":
+                            input_text += f"[System]\n{content}\n\n"
+                        elif role == "user":
+                            input_text += f"[User]\n{content}\n\n"
 
-        Returns:
-            Generated text response
-        """
-        try:
-            extra_body = kwargs.pop("extra_body", {})
-
-            if reasoning:
-                if model in (ModelType.GPT5, ModelType.GPT5_MINI):
-                    extra_body["reasoning"] = {"effort": "high"}
-                elif model in (ModelType.OPUS, ModelType.SONNET):
-                    extra_body["reasoning"] = {
-                        "type": "enabled",
-                        "budget_tokens": 32000,
+                    params = {
+                        "model": deployment,
+                        "input": input_text,
+                        "max_output_tokens": max_tokens,
                     }
+                    if reasoning:
+                        params["reasoning"] = {"effort": "high"}
 
-            response = self.client.chat.completions.create(
-                model=model.model_name,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                timeout=float(timeout),
-                extra_body=extra_body if extra_body else None,
-                **kwargs,
-            )
+                    response = self.client.responses.create(**params)
+                    content = response.output_text
+                    tokens = getattr(response.usage, 'total_tokens', 0) if response.usage else 0
 
-            content = response.choices[0].message.content
-            logger.info(
-                f"Chat completion successful with {model.display_name}: "
-                f"{response.usage.total_tokens} tokens"
-            )
+                else:
+                    extra_body = kwargs.pop("extra_body", {})
+                    if reasoning:
+                        if model in (ModelType.GPT5, ModelType.GPT5_MINI):
+                            extra_body["reasoning"] = {"effort": "high"}
+                        elif model in (ModelType.OPUS, ModelType.SONNET):
+                            extra_body["reasoning"] = {"type": "enabled", "budget_tokens": 32000}
 
-            return content
+                    response = self.client.chat.completions.create(
+                        model=deployment,
+                        messages=messages,
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        timeout=float(timeout),
+                        extra_body=extra_body if extra_body else None,
+                        **kwargs,
+                    )
+                    content = response.choices[0].message.content
+                    tokens = response.usage.total_tokens if response.usage else 0
 
-        except Exception as e:
-            logger.error(f"Chat completion failed: {e}")
-            raise
+                logger.info(f"Chat completion successful with {model.display_name}: {tokens} tokens")
+                return content
+
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                if "429" in err_str or "Too Many Requests" in err_str or "rate" in err_str.lower():
+                    wait = min(2 ** attempt * 5, 60)  # 5s, 10s, 20s, 40s, 60s
+                    logger.warning(f"Rate limited (attempt {attempt+1}/{max_retries}), waiting {wait}s...")
+                    time.sleep(wait)
+                    continue
+                elif "timeout" in err_str.lower() or "timed out" in err_str.lower():
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Timeout (attempt {attempt+1}/{max_retries}), retrying...")
+                        time.sleep(2)
+                        continue
+                # Non-retryable error
+                logger.error(f"Chat completion failed: {e}")
+                raise
+
+        logger.error(f"Chat completion failed after {max_retries} retries: {last_error}")
+        raise last_error
 
     def simple_query(
         self,
@@ -97,74 +139,22 @@ class LLMClient:
         temperature: float = 0.0,
         max_tokens: Optional[int] = 16000,
     ) -> str:
-        """
-        Send a simple query with optional system prompt.
-
-        Args:
-            prompt: User prompt
-            model: Model type to use
-            system_prompt: Optional system prompt
-            temperature: Sampling temperature (0 for SQL generation)
-            max_tokens: Maximum tokens to generate
-
-        Returns:
-            Generated text response
-        """
         messages = []
-
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-
         messages.append({"role": "user", "content": prompt})
-
-        return self.chat_completion(
-            messages=messages,
-            model=model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
-
-    def batch_query(
-        self,
-        prompts: List[str],
-        model: ModelType = ModelType.GPT5,
-        system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-    ) -> List[str]:
-        """
-        Send multiple queries and collect responses.
-
-        Args:
-            prompts: List of user prompts
-            model: Model type to use
-            system_prompt: Optional system prompt
-            temperature: Sampling temperature
-
-        Returns:
-            List of generated responses
-        """
-        responses = []
-
-        for i, prompt in enumerate(prompts):
-            logger.info(f"Processing batch query {i + 1}/{len(prompts)}")
-            response = self.simple_query(
-                prompt=prompt,
-                model=model,
-                system_prompt=system_prompt,
-                temperature=temperature,
-            )
-            responses.append(response)
-
-        return responses
+        return self.chat_completion(messages=messages, model=model, temperature=temperature, max_tokens=max_tokens)
 
 
-# Global instance
+# Thread-safe global instance
 _llm_client: Optional[LLMClient] = None
+_llm_lock = threading.Lock()
 
 
 def get_llm_client() -> LLMClient:
-    """Get or create global LLM client instance."""
     global _llm_client
     if _llm_client is None:
-        _llm_client = LLMClient()
+        with _llm_lock:
+            if _llm_client is None:
+                _llm_client = LLMClient()
     return _llm_client
